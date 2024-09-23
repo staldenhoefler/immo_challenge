@@ -64,7 +64,7 @@ ignore-patterns=^\.#
 # manipulated during runtime and thus existing member attributes cannot be
 # deduced by static analysis). It supports qualified module names, as well as
 # Unix pattern matching.
-ignored-modules=
+ignored-modules=test
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
@@ -439,8 +439,7 @@ disable=raw-checker-failed,
         use-symbolic-message-instead,
         use-implicit-booleaness-not-comparison-to-string,
         use-implicit-booleaness-not-comparison-to-zero,
-        C0116 test_*.py,
-        C0114
+        missing-module-docstring
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
