@@ -21,7 +21,7 @@ jobs:
         pip install -r requirements.txt
     - name: Analysing the code with pylint
       run: |
-        pylint --module-naming-style=camelCase $(git ls-files '*.py')
-    - name: Test with pytest
+        pylint $(git ls-files '*.py')
+    - name: Run all Tests
       run: |
         pytest
