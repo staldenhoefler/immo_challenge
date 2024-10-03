@@ -1,0 +1,16 @@
+columns_to_drop_all: [
+'Unnamed: 0.1', 'Unnamed: 0','Municipality','Living space',
+'Plot area','Floor space','location','description',
+'detailed_description','url','table','detail_responsive#municipality',
+'detail_responsive#surface_living','detail_responsive#floor','detail_responsive#available_from',
+'Gemeinde','Wohnfläche','Stockwerk','Nutzfläche','Verfügbarkeit','Grundstücksfläche',
+'detail_responsive#surface_property','Commune','Surface habitable','Surface du terrain',
+'Surface utile','Disponibilité','Étage','Comune','Superficie abitabile','Disponibilità',
+'Gross return','Piano','Superficie del terreno','Superficie utile','Municipality_merged',
+'Floor_merged','Living_space_merged','Plot_area_merged','Availability_merged','location_parsed',
+'title','price','details','address','link','details_structured','lat','lon','index','Latitude',
+'Locality','Longitude','Zip','rooms','type_unified','Floor_unified','Living_area_unified','provider','space',
+'price_s','address_s','Surface living:','Land area:','Room height:','features',
+'description_detailed','Floor space:','Volume:','plz','Number of toilets:','Gross yield:',
+'Minimum floor space:','space_cleaned'
+]

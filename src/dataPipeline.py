@@ -1,13 +1,23 @@
+from datetime import datetime
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, Normalizer
 import torch
 from torch.utils.data import Dataset
+import yaml
 
 
 class DataPipeline:
     """
     A class used to create a data pipeline for preprocessing datasets.
+
+    Example usage:
+    from src.dataPipeline import DataPipeline
+    from sklearn.impute import KNNImputer
+
+    dp = DataPipeline()
+    knnImputer = KNNImputer(n_neighbors=10)
+    df_cleaned = dp.run_pipeline(imputer=knnImputer)
     """
 
     def __init__(self):
@@ -40,12 +50,62 @@ class DataPipeline:
 
         Note: Implementation to be added later.
         """
-        pass  # To be implemented later
 
         self.data['Floor'] = self.data[['Floor', 'detail_responsive#floor', 'Floor_merged']].bfill(axis=1)['Floor']
-        self.data['Space extracted'] = self.data[['Space extracted', 'detail_responsive#surface_living']].bfill(axis=1)[
-            'Space extracted']
+        self.data['Space extracted'] = self.data[['Space extracted', 'detail_responsive#surface_living']].bfill(axis=1)['Space extracted']
         self.data['Plot_area_unified'] = self.data[['Plot_area_unified', 'detail_responsive#surface_property', 'Plot_area_merged']].bfill(axis=1)['Plot_area_unified']
+        self.data['Availability'] = self.data[['Availability', 'detail_responsive#available_from', 'Availability_merged', 'Verfügbarkeit', 'Disponibilité', 'Disponibilità']].bfill(axis=1)['Availability']
+        self.data['No. of rooms:'] = self.data[['No. of rooms:', 'rooms']].bfill(axis=1)['No. of rooms:']
+
+    def clean_data(self):
+        """
+        Clean the data by removing Units and replacing word with its values.
+        """
+        # Floor column
+        self.data['Floor'] = self.data['Floor'].replace({
+            '1. Basement': '-1',
+            '2. Basement': '-2',
+            '3. Basement': '-3',
+            '4. Basement': '-4',
+            'Basement': '-1',
+            'GF': '0',
+            'Ground floor': '0'
+        })
+        self.data['Floor'] = self.data['Floor'].apply(lambda x: x.split('.')[0] if isinstance(x, str) else x)
+
+        # Nutzfläche column
+        self.data['detail_responsive#surface_usable'] = self.data['detail_responsive#surface_usable'].apply(lambda x: x.split(' ')[0] if isinstance(x, str) else x)
+
+        # Stockwerksfläche column
+        self.data['Floor_space_merged'] = self.data['Floor_space_merged'].apply(lambda x: x.split(' ')[0] if isinstance(x, str) else x)
+
+        # Fläche column
+        self.data['Space extracted'] = self.data['Space extracted'].apply(lambda x: x.split(' ')[0] if isinstance(x, str) else x)
+        self.data['Space extracted'] = self.data['Space extracted'].replace({'\'': ''})
+
+        # Plot_area_unified column
+        self.data['Plot_area_unified'] = self.data['Plot_area_unified'].apply(lambda x: x.split(' ')[0] if isinstance(x, str) else x)
+        self.data['Plot_area_unified'] = self.data['Plot_area_unified'].astype(str).str.replace(',', '')
+
+        # Example of how to process the Availability column
+        self.data['Availability'] = self.data['Availability'].apply(lambda x: 'Future' if len(str(x).split('.')) > 1 else x)
+
+        # No. of rooms: column
+        self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
+
+
+        # Remove rows with nan in 'price_cleaned' column
+        self.data = self.data.dropna(subset=['price_cleaned'])
+
+        # Change datatype of every column except of some to float
+        for column in self.data.columns:
+            if column not in ['Availability', 'type']:
+                #print(f'{column}: {self.data[column].unique()}')
+                self.data[column] = self.data[column].astype(float)
+
+
+        # rename column
+        #self.data.rename(columns={'Floor': 'Stockwerk'}, inplace=True)
 
 
     def impute_missing_values(self, imputer=SimpleImputer()):
@@ -100,18 +160,40 @@ class DataPipeline:
         """
         return self.data
 
-    def run_pipeline(self, file_path:str = "../data/immo_data_202208_v2.csv", columns_to_drop:list = [], imputer=SimpleImputer(), normalize_and_standardize:bool = True):
+    def run_pipeline(self, file_path:str = "../data/immo_data_202208_v2.csv", imputer=SimpleImputer(), normalize_and_standardize:bool = False):
         """
         Run the data pipeline.
+
+        Parameters:
+        file_path (str): The path to the CSV file.
+        columns_to_drop (list): List of column names to drop. Change in config.ini.
+        imputer (sklearn.impute._base.SimpleImputer): An instance of an imputer.
+        normalize_and_standardize (bool) False: Whether to normalize and standardize the data.
+
+        Returns:
+        pandas.DataFrame: The processed DataFrame.
         """
+
         self.read_csv(file_path)
+        self.merge_columns()
 
-        #TODO: Make dropping of Columns with config file
+        # Read configuration file
+        with open('../src/params.yaml', 'r', encoding='utf-8') as file:
+            params = yaml.safe_load(file)
+        columns_to_drop = params['columns_to_drop_all']
+
         self.drop_columns(columns_to_drop)
-
-
+        self.clean_data()
+        self.encode_categorical_features()
         self.impute_missing_values(imputer)
-
         if normalize_and_standardize:
             self.normalize()
             self.standardize()
+
+        return self.data
+
+    def encode_categorical_features(self):
+        """
+        Encode categorical features in the DataFrame.
+        """
+        self.data = pd.get_dummies(self.data)
