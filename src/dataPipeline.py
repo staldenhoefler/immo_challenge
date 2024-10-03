@@ -26,7 +26,7 @@ class DataPipeline:
         """
         self.data = None
 
-    def read_csv(self, file_path):
+    def readCsv(self, file_path):
         """
         Read a CSV file into a pandas DataFrame.
 
@@ -35,7 +35,7 @@ class DataPipeline:
         """
         self.data = pd.read_csv(file_path)
 
-    def drop_columns(self, columns):
+    def dropColumns(self, columns):
         """
         Drop specified columns from the DataFrame.
 
@@ -44,7 +44,7 @@ class DataPipeline:
         """
         self.data.drop(columns=columns, inplace=True)
 
-    def merge_columns(self):
+    def mergeColumns(self):
         """
         Merge specified columns in the DataFrame.
 
@@ -57,7 +57,7 @@ class DataPipeline:
         self.data['Availability'] = self.data[['Availability', 'detail_responsive#available_from', 'Availability_merged', 'Verfügbarkeit', 'Disponibilité', 'Disponibilità']].bfill(axis=1)['Availability']
         self.data['No. of rooms:'] = self.data[['No. of rooms:', 'rooms']].bfill(axis=1)['No. of rooms:']
 
-    def clean_data(self):
+    def cleanData(self):
         """
         Clean the data by removing Units and replacing word with its values.
         """
@@ -108,7 +108,7 @@ class DataPipeline:
         #self.data.rename(columns={'Floor': 'Stockwerk'}, inplace=True)
 
 
-    def impute_missing_values(self, imputer=SimpleImputer()):
+    def imputeMissingValues(self, imputer=SimpleImputer()):
         """
         Impute missing values in the DataFrame using the specified imputer.
 
@@ -131,7 +131,7 @@ class DataPipeline:
         scaler = StandardScaler()
         self.data = pd.DataFrame(scaler.fit_transform(self.data), columns=self.data.columns)
 
-    def to_pytorch_dataset(self):
+    def toPytorchDataset(self):
         """
         Convert the DataFrame into a PyTorch Dataset.
 
@@ -151,7 +151,7 @@ class DataPipeline:
 
         return PandasDataset(self.data)
 
-    def get_data(self):
+    def getData(self):
         """
         Get the processed DataFrame.
 
@@ -160,7 +160,7 @@ class DataPipeline:
         """
         return self.data
 
-    def run_pipeline(self, file_path:str = "../data/immo_data_202208_v2.csv", imputer=SimpleImputer(), normalize_and_standardize:bool = False):
+    def runPipeline(self, file_path:str = "../data/immo_data_202208_v2.csv", imputer=SimpleImputer(), normalize_and_standardize:bool = False):
         """
         Run the data pipeline.
 
@@ -174,25 +174,25 @@ class DataPipeline:
         pandas.DataFrame: The processed DataFrame.
         """
 
-        self.read_csv(file_path)
-        self.merge_columns()
+        self.readCsv(file_path)
+        self.mergeColumns()
 
         # Read configuration file
         with open('../src/params.yaml', 'r', encoding='utf-8') as file:
             params = yaml.safe_load(file)
         columns_to_drop = params['columns_to_drop_all']
 
-        self.drop_columns(columns_to_drop)
-        self.clean_data()
-        self.encode_categorical_features()
-        self.impute_missing_values(imputer)
+        self.dropColumns(columns_to_drop)
+        self.cleanData()
+        self.encodeCategoricalFeatures()
+        self.imputeMissingValues(imputer)
         if normalize_and_standardize:
             self.normalize()
             self.standardize()
 
         return self.data
 
-    def encode_categorical_features(self):
+    def encodeCategoricalFeatures(self):
         """
         Encode categorical features in the DataFrame.
         """
