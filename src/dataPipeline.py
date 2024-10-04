@@ -195,7 +195,7 @@ class DataPipeline:
         return self.data
 
     def runPipeline(self,
-                    filePath:str = "../data/immo_data_202208_v2.csv",
+                    filePath:str = "data/immo_data_202208_v2.csv",
                     imputer=SimpleImputer(),
                     normalizeAndStandardize:bool = False
                     ):
@@ -216,7 +216,7 @@ class DataPipeline:
         self.mergeColumns()
 
         # Read configuration file
-        with open('../src/params.yaml', 'r', encoding='utf-8') as file:
+        with open('src/params.yaml', 'r', encoding='utf-8') as file:
             params = yaml.safe_load(file)
         columns_to_drop = params['columns_to_drop_all']
 
