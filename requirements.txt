@@ -4,4 +4,3 @@ seaborn == 0.13.2
 numpy
 scikit-learn
 torch
-yaml == 6.0.2
