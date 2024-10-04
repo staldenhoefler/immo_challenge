@@ -194,7 +194,11 @@ class DataPipeline:
         """
         return self.data
 
-    def runPipeline(self, filePath:str = "../data/immo_data_202208_v2.csv", imputer=SimpleImputer(), normalizeAndStandardize:bool = False):
+    def runPipeline(self,
+                    filePath:str = "../data/immo_data_202208_v2.csv",
+                    imputer=SimpleImputer(),
+                    normalizeAndStandardize:bool = False
+                    ):
         """
         Run the data pipeline.
 
