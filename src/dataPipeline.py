@@ -25,14 +25,14 @@ class DataPipeline:
         """
         self.data = None
 
-    def readCsv(self, file_path):
+    def readCsv(self, filePath):
         """
         Read a CSV file into a pandas DataFrame.
 
         Parameters:
         file_path (str): The path to the CSV file.
         """
-        self.data = pd.read_csv(file_path)
+        self.data = pd.read_csv(filePath)
 
     def dropColumns(self, columns):
         """
