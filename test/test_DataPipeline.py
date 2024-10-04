@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.impute import KNNImputer
 from src.dataPipeline import DataPipeline  # Assuming the class is in data_pipeline.py
 import torch
+import os
 
 class TestDataPipeline(unittest.TestCase):
     """
@@ -21,6 +22,7 @@ class TestDataPipeline(unittest.TestCase):
             'C': [9, 10, 11, 12],
             'D': ['x', 'y', 'z', 'w']
         }
+        os.chdir('..')
         self.df = pd.DataFrame(data)
         self.pipeline = DataPipeline()
         self.pipeline.data = self.df.copy()
