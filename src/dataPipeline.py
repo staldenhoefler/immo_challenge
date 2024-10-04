@@ -50,7 +50,9 @@ class DataPipeline:
         Note: Implementation to be added later.
         """
 
-        self.data['Floor'] = self.data[['Floor', 'detail_responsive#floor', 'Floor_merged']].bfill(axis=1)['Floor']
+        self.data['Floor'] = self.data[[
+            'Floor', 'detail_responsive#floor', 'Floor_merged'
+        ]].bfill(axis=1)['Floor']
         self.data['Space extracted'] = self.data[[
             'Space extracted', 'detail_responsive#surface_living'
         ]].bfill(axis=1)['Space extracted']
@@ -66,7 +68,9 @@ class DataPipeline:
             'Disponibilità'
         ]].bfill(axis=1)['Availability']
 
-        self.data['No. of rooms:'] = self.data[['No. of rooms:', 'rooms']].bfill(axis=1)['No. of rooms:']
+        self.data['No. of rooms:'] = self.data[[
+            'No. of rooms:', 'rooms'
+        ]].bfill(axis=1)['No. of rooms:']
 
     def cleanData(self):
         """
@@ -82,10 +86,14 @@ class DataPipeline:
             'GF': '0',
             'Ground floor': '0'
         })
-        self.data['Floor'] = self.data['Floor'].apply(lambda x: x.split('.')[0] if isinstance(x, str) else x)
+        self.data['Floor'] = self.data['Floor'].apply(
+            lambda x: x.split('.')[0] if isinstance(x, str) else x
+        )
 
         # Nutzfläche column
-        self.data['detail_responsive#surface_usable'] = self.data['detail_responsive#surface_usable'].apply(
+        self.data['detail_responsive#surface_usable'] = self.data[
+            'detail_responsive#surface_usable'
+        ].apply(
             lambda x: x.split(' ')[0] if isinstance(x, str) else x
         )
 
@@ -104,7 +112,9 @@ class DataPipeline:
         self.data['Plot_area_unified'] = self.data['Plot_area_unified'].apply(
             lambda x: x.split(' ')[0] if isinstance(x, str) else x
         )
-        self.data['Plot_area_unified'] = self.data['Plot_area_unified'].astype(str).str.replace(',', '')
+        self.data['Plot_area_unified'] = self.data[
+            'Plot_area_unified'
+        ].astype(str).str.replace(',', '')
 
         # Example of how to process the Availability column
         self.data['Availability'] = self.data['Availability'].apply(
@@ -161,6 +171,9 @@ class DataPipeline:
         """
 
         class PandasDataset(Dataset):
+            """
+            A PyTorch Dataset class for a pandas DataFrame.
+            """
             def __init__(self, data):
                 self.data = torch.tensor(data.values, dtype=torch.float)
 
