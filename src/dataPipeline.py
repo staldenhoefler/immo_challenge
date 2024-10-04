@@ -1,4 +1,3 @@
-from datetime import datetime
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, Normalizer
@@ -52,9 +51,21 @@ class DataPipeline:
         """
 
         self.data['Floor'] = self.data[['Floor', 'detail_responsive#floor', 'Floor_merged']].bfill(axis=1)['Floor']
-        self.data['Space extracted'] = self.data[['Space extracted', 'detail_responsive#surface_living']].bfill(axis=1)['Space extracted']
-        self.data['Plot_area_unified'] = self.data[['Plot_area_unified', 'detail_responsive#surface_property', 'Plot_area_merged']].bfill(axis=1)['Plot_area_unified']
-        self.data['Availability'] = self.data[['Availability', 'detail_responsive#available_from', 'Availability_merged', 'Verfügbarkeit', 'Disponibilité', 'Disponibilità']].bfill(axis=1)['Availability']
+        self.data['Space extracted'] = self.data[[
+            'Space extracted', 'detail_responsive#surface_living'
+        ]].bfill(axis=1)['Space extracted']
+
+        self.data['Plot_area_unified'] = self.data[[
+            'Plot_area_unified', 'detail_responsive#surface_property',
+            'Plot_area_merged'
+        ]].bfill(axis=1)['Plot_area_unified']
+
+        self.data['Availability'] = self.data[[
+            'Availability', 'detail_responsive#available_from',
+            'Availability_merged', 'Verfügbarkeit', 'Disponibilité',
+            'Disponibilità'
+        ]].bfill(axis=1)['Availability']
+
         self.data['No. of rooms:'] = self.data[['No. of rooms:', 'rooms']].bfill(axis=1)['No. of rooms:']
 
     def cleanData(self):
@@ -74,21 +85,31 @@ class DataPipeline:
         self.data['Floor'] = self.data['Floor'].apply(lambda x: x.split('.')[0] if isinstance(x, str) else x)
 
         # Nutzfläche column
-        self.data['detail_responsive#surface_usable'] = self.data['detail_responsive#surface_usable'].apply(lambda x: x.split(' ')[0] if isinstance(x, str) else x)
+        self.data['detail_responsive#surface_usable'] = self.data['detail_responsive#surface_usable'].apply(
+            lambda x: x.split(' ')[0] if isinstance(x, str) else x
+        )
 
         # Stockwerksfläche column
-        self.data['Floor_space_merged'] = self.data['Floor_space_merged'].apply(lambda x: x.split(' ')[0] if isinstance(x, str) else x)
+        self.data['Floor_space_merged'] = self.data['Floor_space_merged'].apply(
+            lambda x: x.split(' ')[0] if isinstance(x, str) else x
+        )
 
         # Fläche column
-        self.data['Space extracted'] = self.data['Space extracted'].apply(lambda x: x.split(' ')[0] if isinstance(x, str) else x)
+        self.data['Space extracted'] = self.data['Space extracted'].apply(
+            lambda x: x.split(' ')[0] if isinstance(x, str) else x
+        )
         self.data['Space extracted'] = self.data['Space extracted'].replace({'\'': ''})
 
         # Plot_area_unified column
-        self.data['Plot_area_unified'] = self.data['Plot_area_unified'].apply(lambda x: x.split(' ')[0] if isinstance(x, str) else x)
+        self.data['Plot_area_unified'] = self.data['Plot_area_unified'].apply(
+            lambda x: x.split(' ')[0] if isinstance(x, str) else x
+        )
         self.data['Plot_area_unified'] = self.data['Plot_area_unified'].astype(str).str.replace(',', '')
 
         # Example of how to process the Availability column
-        self.data['Availability'] = self.data['Availability'].apply(lambda x: 'Future' if len(str(x).split('.')) > 1 else x)
+        self.data['Availability'] = self.data['Availability'].apply(
+            lambda x: 'Future' if len(str(x).split('.')) > 1 else x
+        )
 
         # No. of rooms: column
         self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
@@ -160,7 +181,7 @@ class DataPipeline:
         """
         return self.data
 
-    def runPipeline(self, file_path:str = "../data/immo_data_202208_v2.csv", imputer=SimpleImputer(), normalize_and_standardize:bool = False):
+    def runPipeline(self, filePath:str = "../data/immo_data_202208_v2.csv", imputer=SimpleImputer(), normalizeAndStandardize:bool = False):
         """
         Run the data pipeline.
 
@@ -174,7 +195,7 @@ class DataPipeline:
         pandas.DataFrame: The processed DataFrame.
         """
 
-        self.readCsv(file_path)
+        self.readCsv(filePath)
         self.mergeColumns()
 
         # Read configuration file
@@ -186,7 +207,7 @@ class DataPipeline:
         self.cleanData()
         self.encodeCategoricalFeatures()
         self.imputeMissingValues(imputer)
-        if normalize_and_standardize:
+        if normalizeAndStandardize:
             self.normalize()
             self.standardize()
 
