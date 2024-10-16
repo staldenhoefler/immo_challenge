@@ -137,7 +137,7 @@ class DataPipeline:
 
         # Change datatype of every column except of some to float
         for column in self.data.columns:
-            if column not in ['Availability', 'type']:
+            if column not in ['Availability', 'type', 'provider']:
                 #print(f'{column}: {self.data[column].unique()}')
                 self.data[column] = self.data[column].astype(float)
 

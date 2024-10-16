@@ -9,7 +9,7 @@ columns_to_drop_all: [
 'Gross return','Piano','Superficie del terreno','Superficie utile','Municipality_merged',
 'Floor_merged','Living_space_merged','Plot_area_merged','Availability_merged','location_parsed',
 'title','price','details','address','link','details_structured','lat','lon','index','Latitude',
-'Locality','Longitude','Zip','rooms','type_unified','Floor_unified','Living_area_unified','provider','space',
+'Locality','Longitude','Zip','rooms','type_unified','Floor_unified','Living_area_unified','space',
 'price_s','address_s','Surface living:','Land area:','Room height:','features',
 'description_detailed','Floor space:','Volume:','plz','Number of toilets:','Gross yield:',
 'Minimum floor space:','space_cleaned'
