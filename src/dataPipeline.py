@@ -77,52 +77,59 @@ class DataPipeline:
         Clean the data by removing Units and replacing word with its values.
         """
         # Floor column
-        self.data['Floor'] = self.data['Floor'].replace({
-            '1. Basement': '-1',
-            '2. Basement': '-2',
-            '3. Basement': '-3',
-            '4. Basement': '-4',
-            'Basement': '-1',
-            'GF': '0',
-            'Ground floor': '0'
-        })
-        self.data['Floor'] = self.data['Floor'].apply(
-            lambda x: x.split('.')[0] if isinstance(x, str) else x
-        )
+        if 'Floor' in self.data.columns:
+            self.data['Floor'] = self.data['Floor'].replace({
+                '1. Basement': '-1',
+                '2. Basement': '-2',
+                '3. Basement': '-3',
+                '4. Basement': '-4',
+                'Basement': '-1',
+                'GF': '0',
+                'Ground floor': '0'
+            })
+            self.data['Floor'] = self.data['Floor'].apply(
+                lambda x: x.split('.')[0] if isinstance(x, str) else x
+            )
 
         # Nutzfläche column
-        self.data['detail_responsive#surface_usable'] = self.data[
-            'detail_responsive#surface_usable'
-        ].apply(
-            lambda x: x.split(' ')[0] if isinstance(x, str) else x
-        )
+        if 'detail_responsive#surface_usable' in self.data.columns:
+            self.data['detail_responsive#surface_usable'] = self.data[
+                'detail_responsive#surface_usable'
+            ].apply(
+                lambda x: x.split(' ')[0] if isinstance(x, str) else x
+            )
 
         # Stockwerksfläche column
-        self.data['Floor_space_merged'] = self.data['Floor_space_merged'].apply(
-            lambda x: x.split(' ')[0] if isinstance(x, str) else x
-        )
+        if 'Floor_space_merged' in self.data.columns:
+            self.data['Floor_space_merged'] = self.data['Floor_space_merged'].apply(
+                lambda x: x.split(' ')[0] if isinstance(x, str) else x
+            )
 
         # Fläche column
-        self.data['Space extracted'] = self.data['Space extracted'].apply(
-            lambda x: x.split(' ')[0] if isinstance(x, str) else x
-        )
-        self.data['Space extracted'] = self.data['Space extracted'].replace({'\'': ''})
+        if 'Space extracted' in self.data.columns:
+            self.data['Space extracted'] = self.data['Space extracted'].apply(
+                lambda x: x.split(' ')[0] if isinstance(x, str) else x
+            )
+            self.data['Space extracted'] = self.data['Space extracted'].replace({'\'': ''})
 
         # Plot_area_unified column
-        self.data['Plot_area_unified'] = self.data['Plot_area_unified'].apply(
-            lambda x: x.split(' ')[0] if isinstance(x, str) else x
-        )
-        self.data['Plot_area_unified'] = self.data[
-            'Plot_area_unified'
-        ].astype(str).str.replace(',', '')
+        if 'Plot_area_unified' in self.data.columns:
+            self.data['Plot_area_unified'] = self.data['Plot_area_unified'].apply(
+                lambda x: x.split(' ')[0] if isinstance(x, str) else x
+            )
+            self.data['Plot_area_unified'] = self.data[
+                'Plot_area_unified'
+            ].astype(str).str.replace(',', '')
 
         # Example of how to process the Availability column
-        self.data['Availability'] = self.data['Availability'].apply(
-            lambda x: 'Future' if len(str(x).split('.')) > 1 else x
-        )
+        if 'Availability' in self.data.columns:
+            self.data['Availability'] = self.data['Availability'].apply(
+                lambda x: 'Future' if len(str(x).split('.')) > 1 else x
+            )
 
         # No. of rooms: column
-        self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
+        if 'No. of rooms:' in self.data.columns:
+            self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
 
 
         # Remove rows with nan in 'price_cleaned' column
@@ -130,13 +137,16 @@ class DataPipeline:
 
         # Change datatype of every column except of some to float
         for column in self.data.columns:
-            if column not in ['Availability', 'type']:
+            if column not in ['Availability', 'type', 'provider']:
                 #print(f'{column}: {self.data[column].unique()}')
                 self.data[column] = self.data[column].astype(float)
 
 
         # rename column
         #self.data.rename(columns={'Floor': 'Stockwerk'}, inplace=True)
+
+        # drop dublicated rows
+        self.data.drop_duplicates(inplace=True)
 
 
     def imputeMissingValues(self, imputer=SimpleImputer()):
