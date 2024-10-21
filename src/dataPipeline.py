@@ -3,7 +3,10 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, Normalizer
 import torch
 from torch.utils.data import Dataset
+import numpy as np
 import yaml
+import re
+import pgeocode
 
 
 class DataPipeline:
@@ -72,6 +75,32 @@ class DataPipeline:
             'No. of rooms:', 'rooms'
         ]].bfill(axis=1)['No. of rooms:']
 
+        def extract_plz(address):
+            match = re.search(r"\b\d{4}\b", address)
+            if match:
+                return int(match.group())
+            return np.nan
+
+        def impute_plz(df):
+            mask = df['plz_parsed'].isna()
+            df.loc[mask, 'plz_parsed'] = df.loc[mask, 'address'].apply(extract_plz)
+            df['plz_parsed'] = df['plz_parsed'].astype("Int64")
+            return df
+
+        self.data = impute_plz(self.data)
+
+        def impute_lon_lat(df):
+            nomi = pgeocode.Nominatim('ch')
+            mask = df['lat'].isna()  # Check for missing latitude values
+            missing_postal_codes = df.loc[mask, 'plz_parsed'].reset_index()
+            location_data = nomi.query_postal_code(missing_postal_codes['plz_parsed'].values.astype("str").tolist())
+            df.loc[mask, 'lat'] = location_data['latitude'].values
+            df.loc[mask, 'lon'] = location_data['longitude'].values
+            return df
+
+        self.data = impute_lon_lat(self.data)
+        self.data
+
     def cleanData(self):
         """
         Clean the data by removing Units and replacing word with its values.
@@ -131,7 +160,6 @@ class DataPipeline:
         if 'No. of rooms:' in self.data.columns:
             self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
 
-
         # Remove rows with nan in 'price_cleaned' column
         self.data = self.data.dropna(subset=['price_cleaned'])
 
@@ -141,12 +169,15 @@ class DataPipeline:
                 #print(f'{column}: {self.data[column].unique()}')
                 self.data[column] = self.data[column].astype(float)
 
+        # Remove rows with nan in 'price_cleaned' column
 
         # rename column
         #self.data.rename(columns={'Floor': 'Stockwerk'}, inplace=True)
 
         # drop dublicated rows
         self.data.drop_duplicates(inplace=True)
+
+
 
 
     def imputeMissingValues(self, imputer=SimpleImputer()):
