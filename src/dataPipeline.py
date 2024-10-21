@@ -83,11 +83,11 @@ class DataPipeline:
 
         def imputePlz(df):
             mask = df['plz_parsed'].isna()
-            df.loc[mask, 'plz_parsed'] = df.loc[mask, 'address'].apply(extract_plz)
+            df.loc[mask, 'plz_parsed'] = df.loc[mask, 'address'].apply(extractPlz)
             df['plz_parsed'] = df['plz_parsed'].astype("Int64")
             return df
 
-        self.data = impute_plz(self.data)
+        self.data = imputePlz(self.data)
 
         def imputeLonLat(df):
             nomi = pgeocode.Nominatim('ch')
@@ -98,7 +98,7 @@ class DataPipeline:
             df.loc[mask, 'lon'] = location_data['longitude'].values
             return df
 
-        self.data = impute_lon_lat(self.data)
+        self.data = imputeLonLat(self.data)
         self.data
 
     def cleanData(self):
