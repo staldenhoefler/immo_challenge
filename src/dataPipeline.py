@@ -93,7 +93,8 @@ class DataPipeline:
             nomi = pgeocode.Nominatim('ch')
             mask = df['lat'].isna()  # Check for missing latitude values
             missing_postal_codes = df.loc[mask, 'plz_parsed'].reset_index()
-            location_data = nomi.query_postal_code(missing_postal_codes['plz_parsed'].values.astype("str").tolist())
+            postal_list = missing_postal_codes['plz_parsed'].values.astype("str").tolist()
+            location_data = nomi.query_postal_code(postal_list)
             df.loc[mask, 'lat'] = location_data['latitude'].values
             df.loc[mask, 'lon'] = location_data['longitude'].values
             return df

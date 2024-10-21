@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.dataPipeline import DataPipeline  # Assuming the class is in data_pipeline.py
 import torch
+import os
 
 class TestDataPipeline(unittest.TestCase):
     """
