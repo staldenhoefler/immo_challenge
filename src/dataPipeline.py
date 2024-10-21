@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, Normalizer
@@ -5,7 +6,6 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import yaml
-import re
 import pgeocode
 
 
@@ -99,7 +99,7 @@ class DataPipeline:
             return df
 
         self.data = imputeLonLat(self.data)
-        self.data
+        return self.data
 
     def cleanData(self):
         """
