@@ -75,13 +75,13 @@ class DataPipeline:
             'No. of rooms:', 'rooms'
         ]].bfill(axis=1)['No. of rooms:']
 
-        def extract_plz(address):
+        def extractPlz(address):
             match = re.search(r"\b\d{4}\b", address)
             if match:
                 return int(match.group())
             return np.nan
 
-        def impute_plz(df):
+        def imputePlz(df):
             mask = df['plz_parsed'].isna()
             df.loc[mask, 'plz_parsed'] = df.loc[mask, 'address'].apply(extract_plz)
             df['plz_parsed'] = df['plz_parsed'].astype("Int64")
@@ -89,7 +89,7 @@ class DataPipeline:
 
         self.data = impute_plz(self.data)
 
-        def impute_lon_lat(df):
+        def imputeLonLat(df):
             nomi = pgeocode.Nominatim('ch')
             mask = df['lat'].isna()  # Check for missing latitude values
             missing_postal_codes = df.loc[mask, 'plz_parsed'].reset_index()
