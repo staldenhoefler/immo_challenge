@@ -13,4 +13,13 @@ columns_to_drop_all: [
 'price_s','address_s','Surface living:','Land area:',
 'description_detailed','Floor space:','Volume:','plz','Number of toilets:','Gross yield:',
 'Minimum floor space:','space_cleaned'
+
+
+# Temporary columns
+, 'Gross return'
+, 'details'
+, 'type_unified'
+, 'Room height:'
+, 'features'
+
 ]
