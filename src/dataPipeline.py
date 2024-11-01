@@ -168,7 +168,11 @@ class DataPipeline:
         for column in self.data.columns:
             if column not in ['Availability', 'type', 'provider']:
                 #print(f'{column}: {self.data[column].unique()}')
-                self.data[column] = self.data[column].astype(float)
+                try:
+                    self.data[column] = self.data[column].astype(float)
+                except:
+                    print(f'Error in column: {column}')
+                    break
 
         # Remove rows with nan in 'price_cleaned' column
 
@@ -177,6 +181,7 @@ class DataPipeline:
 
         # drop dublicated rows
         self.data.drop_duplicates(inplace=True)
+        self.data = self.data[self.data['price_cleaned'] != 2]
 
 
 
