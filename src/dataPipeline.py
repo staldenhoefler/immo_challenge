@@ -153,6 +153,7 @@ class DataPipeline:
             self.data['Plot_area_unified'] = self.data[
                 'Plot_area_unified'
             ].astype(str).str.replace(',', '')
+            self.data['Plot_area_unified'] = self.data['Plot_area_unified'].astype(float)
 
         # Example of how to process the Availability column
         if 'Availability' in self.data.columns:
