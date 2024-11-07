@@ -150,6 +150,7 @@ class DataPipeline:
             self.data['Plot_area_unified'] = self.data[
                 'Plot_area_unified'
             ].astype(str).str.replace(',', '')
+            self.data['Plot_area_unified'] = self.data['Plot_area_unified'].astype(float)
 
         # Example of how to process the Availability column
         if 'Availability' in self.data.columns:
@@ -165,10 +166,10 @@ class DataPipeline:
         self.data = self.data.dropna(subset=['price_cleaned'])
 
         # Change datatype of every column except of some to float
-        for column in self.data.columns:
-            if column not in ['Availability', 'type', 'provider']:
+        #for column in self.data.columns:
+            #if column not in ['Availability', 'type', 'provider']:
                 #print(f'{column}: {self.data[column].unique()}')
-                self.data[column] = self.data[column].astype(float)
+                #self.data[column] = self.data[column].astype(float)
 
         # Remove rows with nan in 'price_cleaned' column
 
