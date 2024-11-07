@@ -23,3 +23,12 @@ columns_to_drop_all: [
 , 'features'
 
 ]
+
+optimizer: 'SGD' # 'Adam' or 'SGD'
+loss_function: 'HuberLoss' # 'MSELoss', 'CrossEntropyLoss' usw.
+epochs: 100
+y_column: 'price_cleaned'
+batch_size: [16]
+learning_rates: [0.000001]
+train_val_test_split: [0.8, 0.0, 0.2]
+shufle: [True, False, False]
