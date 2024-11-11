@@ -27,6 +27,7 @@ class DataPipeline:
         Initialize the DataPipeline class.
         """
         self.data = None
+        self.scaler = None
 
     def readCsv(self, filePath):
         """
@@ -46,7 +47,7 @@ class DataPipeline:
         """
         self.data.drop(columns=columns, inplace=True)
 
-    def mergeColumns(self):
+    def mergeColumns(self, clusterGroups=50):
         """
         Merge specified columns in the DataFrame.
 
@@ -100,6 +101,7 @@ class DataPipeline:
             return df
 
         self.data = imputeLonLat(self.data)
+        self.groupLonLats(num_groups=clusterGroups)
         return self.data
 
     def cleanData(self):
@@ -166,7 +168,7 @@ class DataPipeline:
 
         # Change datatype of every column except of some to float
         for column in self.data.columns:
-            if column not in ['Availability', 'type', 'provider']:
+            if column not in ['Availability', 'type', 'provider', 'type_unified']:
                 #print(f'{column}: {self.data[column].unique()}')
                 try:
                     self.data[column] = self.data[column].astype(float)
@@ -206,8 +208,8 @@ class DataPipeline:
         """
         Standardize the DataFrame features.
         """
-        scaler = StandardScaler()
-        self.data = pd.DataFrame(scaler.fit_transform(self.data), columns=self.data.columns)
+        self.scaler = StandardScaler()
+        self.data = pd.DataFrame(self.scaler.fit_transform(self.data), columns=self.data.columns)
 
     def toPytorchDataset(self):
         """
@@ -259,20 +261,19 @@ class DataPipeline:
         pandas.DataFrame: The processed DataFrame.
         """
 
-        self.readCsv(filePath)
-        self.mergeColumns()
-
-        # Read configuration file
         with open('src/params.yaml', 'r', encoding='utf-8') as file:
             params = yaml.safe_load(file)
         columns_to_drop = params['columns_to_drop_all']
+
+        self.readCsv(filePath)
+        self.mergeColumns(params['clusterGroups'])
 
         self.dropColumns(columns_to_drop)
         self.cleanData()
         self.encodeCategoricalFeatures()
         self.imputeMissingValues(imputer)
         if normalizeAndStandardize:
-            self.normalize()
+            #self.normalize()
             self.standardize()
 
         return self.data
@@ -282,3 +283,16 @@ class DataPipeline:
         Encode categorical features in the DataFrame.
         """
         self.data = pd.get_dummies(self.data)
+
+
+    def groupLonLats(self, num_groups):
+        """
+        Group the longitude and latitude values into clusters.
+
+        Parameters:
+        num_groups (int): The number of groups to create.
+        """
+        from sklearn.cluster import KMeans
+
+        kmeans = KMeans(n_clusters=num_groups)
+        self.data['region_group'] = kmeans.fit_predict(self.data[['lon', 'lat']])

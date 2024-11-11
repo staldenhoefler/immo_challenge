@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader, random_split
 import torch.nn as nn
+from torchvision.transforms import transforms
 import torch.nn.functional as F
 import torch.optim as optim
 from src.CustomDataset import DataFrameDataset
@@ -7,17 +8,49 @@ import yaml
 import torch
 import time
 import wandb
+import numpy as np
 
 
-def getDataLoaders(data, y_column:str, batch_size:int, train_val_test_split:list=[0.7, 0.0, 0.3], shufle:list=[True, False, False]):
+class StandardizeTransform:
+    def __init__(self, mean, std):
+        self.mean = torch.tensor(mean, dtype=torch.float32)
+        self.std = torch.tensor(std, dtype=torch.float32)
+
+    def __call__(self, x):
+        return (x - self.mean) / self.std
+
+    def inverse(self, x):
+        return x * self.std + self.mean
+
+
+class MinMaxTransform:
+    def __init__(self, min, max):
+        self.min = torch.tensor(min, dtype=torch.float32)
+        self.max = torch.tensor(max, dtype=torch.float32)
+
+    def __call__(self, x):
+        return (x - self.min) / (self.max - self.min)
+
+    def inverse(self, x):
+        return x * (self.max - self.min) + self.min
+
+def getDataLoaders(df, y_column:str, batch_size:int, train_val_test_split:list=[0.7, 0.0, 0.3], shufle:list=[True, False, False], transform=None):
     """
     Get the data loaders for the model training and evaluation.
     """
+    data = df.copy()
     feature_columns = [col for col in data.columns if col != y_column]
     label_column = y_column
 
+    data[label_column] = np.log(data[label_column] + 1)
+    y_transform = None
+    transform = StandardizeTransform(data[feature_columns].mean().values, data[feature_columns].std().values)
+    #y_transform = MinMaxTransform(data[label_column].min(), data[label_column].max())
+
     # Create dataset and dataloader
-    dataset = DataFrameDataset(data, feature_columns, label_column)
+    dataset = DataFrameDataset(data, feature_columns, label_column, transform=transform)
+
+
 
     # Set your desired split ratios
     train_ratio = train_val_test_split[0]
@@ -36,7 +69,7 @@ def getDataLoaders(data, y_column:str, batch_size:int, train_val_test_split:list
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=shufle[1])
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=shufle[2])
 
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader, transform,  y_transform
 
 def mean_absolute_percentage_error(preds, targets):
     epsilon = 1e-10  # Small value to avoid division by zero
@@ -44,14 +77,15 @@ def mean_absolute_percentage_error(preds, targets):
 
 
 def mape_loss(y_pred, y_true):
-    return torch.mean(torch.abs((y_true - y_pred) / y_true))
+    epsilon = 1e-10
+    return torch.mean(torch.abs((y_true - y_pred) / (y_true+epsilon)))
 
 def getParams():
     with open('src/params.yaml', 'r', encoding='utf-8') as file:
         params = yaml.safe_load(file)
     return params
 
-def train(model, device, epochs, train_loader, test_loader, criterion, optimizer):
+def train(model, device, epochs, train_loader, test_loader, criterion, optimizer, y_transformer=None):
     model.to(device)
     for epoch in range(epochs):
         running_loss = 0.0
@@ -64,7 +98,7 @@ def train(model, device, epochs, train_loader, test_loader, criterion, optimizer
 
             outputs = model(inputs)
             outputs = outputs.squeeze()
-            loss = criterion(outputs.flatten(), labels.flatten())
+            loss = criterion(outputs, labels)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -73,14 +107,14 @@ def train(model, device, epochs, train_loader, test_loader, criterion, optimizer
         train_loss = running_loss / (i + 1)
         endtime_train = time.time() - start_traintime
         test_mape, train_mape, train_loss, test_loss = evaluate(model, device, test_loader, train_loader,
-                                                                        train_loss, endtime_train, criterion)
+                                                                        train_loss, endtime_train, criterion, y_transformer)
         print(
             f"Epoch {epoch + 1}, Loss: {train_loss}, Train MAPE: {train_mape}, Test MAPE: {test_mape}")
     print("Finished Training")
     wandb.finish()
     return model
 
-def evaluate(model, device, test_loader, train_loader, train_loss, endtime_train, criterion):
+def evaluate(model, device, test_loader, train_loader, train_loss, endtime_train, criterion, y_transformer=None):
     # Evaluate the model on test_loader
     model.to(device)
     model.eval()
@@ -95,6 +129,10 @@ def evaluate(model, device, test_loader, train_loader, train_loss, endtime_train
             outputs = model(inputs)
             outputs = outputs.squeeze()
             test_loss += criterion(outputs, labels).item()
+            #outputs = y_transformer.inverse(outputs)
+            #labels = y_transformer.inverse(labels)
+            outputs = torch.exp(outputs)
+            labels = torch.exp(labels)
             test_mape += mean_absolute_percentage_error(labels, outputs).item()
             batches += 1
 
@@ -109,6 +147,10 @@ def evaluate(model, device, test_loader, train_loader, train_loss, endtime_train
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
             outputs = outputs.squeeze()
+            #outputs = y_transformer.inverse(outputs)
+            #labels = y_transformer.inverse(labels)
+            outputs = torch.exp(outputs)
+            labels = torch.exp(labels)
             train_mape += mean_absolute_percentage_error(labels, outputs).item()
             batches += 1
 
@@ -167,6 +209,7 @@ def run(Model, data, linear_layers):
                 "architecture": "MLP",
                 "batch_size": batch_size,
                 "conv_layers": 0,
+                "columns": data.columns,
             }
 
             wandb_login(dict, name=f'MLP-bs{batch_size}-lr{lr}')
@@ -174,12 +217,17 @@ def run(Model, data, linear_layers):
             model = Model()
 
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-            optimizer = getattr(torch.optim, optimizer)(model.parameters(), lr=lr)
+            optimizer_obj = getattr(torch.optim, optimizer)(model.parameters(), lr=lr)
             criterion = getattr(nn, loss_function)()
-            criterion = mean_absolute_percentage_error
-            train_loader, val_loader, test_loader = getDataLoaders(data, y_column, batch_size, train_val_test_split, shufle)
-            model = train(model, device, epochs, train_loader, test_loader, criterion, optimizer)
-            models.append(model.to('cpu'))
+            #criterion = mape_loss
+            train_loader, val_loader, test_loader, transform, y_transformer = getDataLoaders(data, y_column, batch_size, train_val_test_split, shufle)
+            model = train(model, device, epochs, train_loader, test_loader, criterion, optimizer_obj, y_transformer)
+            output = {
+                "model": model.to('cpu'),
+                "y_transformer": y_transformer,
+                "transform": transform,
+            }
+            models.append(output)
 
     return models
 
