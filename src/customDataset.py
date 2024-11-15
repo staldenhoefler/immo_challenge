@@ -4,12 +4,17 @@ import torch
 
 # Custom Dataset class
 class DataFrameDataset(Dataset):
-    def __init__(self, dataframe, feature_columns, label_column, transform=None, y_transform=None):
+    '''
+    Custom dataset class for PyTorch
+    '''
+
+
+    def __init__(self, dataframe, featureColumns, labelColumn, transform=None, yTransform=None):
         self.dataframe = dataframe
-        self.features = dataframe[feature_columns].values
-        self.labels = dataframe[label_column].values
+        self.features = dataframe[featureColumns].values
+        self.labels = dataframe[labelColumn].values
         self.transform = transform
-        self.y_transform = y_transform
+        self.yTransform = yTransform
 
     def __len__(self):
         return len(self.dataframe)
@@ -20,8 +25,7 @@ class DataFrameDataset(Dataset):
         if self.transform:
             x = self.transform(x)
 
-        if self.y_transform:
-            y = self.y_transform(y)
+        if self.yTransform:
+            y = self.yTransform(y)
 
         return x, y
-

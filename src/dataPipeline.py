@@ -2,6 +2,7 @@ import re
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, Normalizer
+from sklearn.cluster import KMeans
 import torch
 from torch.utils.data import Dataset
 import numpy as np
@@ -258,7 +259,7 @@ class DataPipeline:
                     filePath:str = "data/immo_data_202208_v2.csv",
                     imputer=SimpleImputer(),
                     normalizeAndStandardize:bool = False,
-                    columns_to_drop: list = []
+                    columnsToDrop: list = []
                     ):
         """
         Run the data pipeline.
@@ -276,13 +277,13 @@ class DataPipeline:
         with open('src/params.yaml', 'r', encoding='utf-8') as file:
             params = yaml.safe_load(file)
 
-        if columns_to_drop == []:
-            columns_to_drop = params['columns_to_drop_all']
+        if columnsToDrop == []:
+            columnsToDrop = params['columns_to_drop_all']
 
         self.readCsv(filePath)
         self.mergeColumns(params['clusterGroups'])
 
-        self.dropColumns(columns_to_drop)
+        self.dropColumns(columnsToDrop)
         self.cleanData(params)
         self.encodeCategoricalFeatures()
         self.imputeMissingValues(imputer)
@@ -299,14 +300,13 @@ class DataPipeline:
         self.data = pd.get_dummies(self.data)
 
 
-    def groupLonLats(self, num_groups):
+    def groupLonLats(self, numGroups):
         """
         Group the longitude and latitude values into clusters.
 
         Parameters:
-        num_groups (int): The number of groups to create.
+        numGroups (int): The number of groups to create.
         """
-        from sklearn.cluster import KMeans
 
-        kmeans = KMeans(n_clusters=num_groups)
+        kmeans = KMeans(n_clusters=numGroups)
         self.data['region_group'] = kmeans.fit_predict(self.data[['lon', 'lat']])
