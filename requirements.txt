@@ -7,3 +7,5 @@ pyyaml
 pgeocode == 0.5.0
 flask
 wandb
+torch
+torchvision
