@@ -3,6 +3,7 @@ import torch.nn as nn
 from torchvision.transforms import transforms
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from src.CustomDataset import DataFrameDataset
 import yaml
 import torch
@@ -73,7 +74,7 @@ def getDataLoaders(df, y_column:str, batch_size:int, train_val_test_split:list=[
 
 def mean_absolute_percentage_error(preds, targets):
     epsilon = 1e-10  # Small value to avoid division by zero
-    return torch.mean(torch.abs((targets - preds) / (targets + epsilon))) * 100
+    return torch.mean(torch.abs((targets - preds) / (targets + epsilon))) * 100.0
 
 
 def mape_loss(y_pred, y_true):
@@ -85,8 +86,9 @@ def getParams():
         params = yaml.safe_load(file)
     return params
 
-def train(model, device, epochs, train_loader, test_loader, criterion, optimizer, y_transformer=None):
+def train(model, device, epochs, train_loader, test_loader, criterion, optimizer, scheduler, y_transformer=None):
     model.to(device)
+    alpha = 0.0
     for epoch in range(epochs):
         running_loss = 0.0
         start_traintime = time.time()
@@ -99,6 +101,8 @@ def train(model, device, epochs, train_loader, test_loader, criterion, optimizer
             outputs = model(inputs)
             outputs = outputs.squeeze()
             loss = criterion(outputs, labels)
+            penalty = torch.mean(torch.clamp(outputs - 18.0, min=0.0)) ** 2
+            loss += penalty * alpha
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -108,6 +112,7 @@ def train(model, device, epochs, train_loader, test_loader, criterion, optimizer
         endtime_train = time.time() - start_traintime
         test_mape, train_mape, train_loss, test_loss = evaluate(model, device, test_loader, train_loader,
                                                                         train_loss, endtime_train, criterion, y_transformer)
+        scheduler.step(test_loss)
         print(
             f"Epoch {epoch + 1}, Loss: {train_loss}, Train MAPE: {train_mape}, Test MAPE: {test_mape}")
     print("Finished Training")
@@ -118,6 +123,7 @@ def evaluate(model, device, test_loader, train_loader, train_loss, endtime_train
     # Evaluate the model on test_loader
     model.to(device)
     model.eval()
+    alpha = 0.0
 
     batches = 0
     test_loss = 0
@@ -129,8 +135,8 @@ def evaluate(model, device, test_loader, train_loader, train_loss, endtime_train
             outputs = model(inputs)
             outputs = outputs.squeeze()
             test_loss += criterion(outputs, labels).item()
-            #outputs = y_transformer.inverse(outputs)
-            #labels = y_transformer.inverse(labels)
+            penalty = torch.mean(torch.clamp(outputs - 18.0, min=0.0)) ** 2
+            test_loss += penalty * alpha
             outputs = torch.exp(outputs)
             labels = torch.exp(labels)
             test_mape += mean_absolute_percentage_error(labels, outputs).item()
@@ -147,8 +153,6 @@ def evaluate(model, device, test_loader, train_loader, train_loss, endtime_train
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = model(inputs)
             outputs = outputs.squeeze()
-            #outputs = y_transformer.inverse(outputs)
-            #labels = y_transformer.inverse(labels)
             outputs = torch.exp(outputs)
             labels = torch.exp(labels)
             train_mape += mean_absolute_percentage_error(labels, outputs).item()
@@ -218,10 +222,11 @@ def run(Model, data, linear_layers):
 
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             optimizer_obj = getattr(torch.optim, optimizer)(model.parameters(), lr=lr)
+            scheduler = ReduceLROnPlateau(optimizer_obj, mode='min', factor=0.000001, patience=4)
             criterion = getattr(nn, loss_function)()
             #criterion = mape_loss
             train_loader, val_loader, test_loader, transform, y_transformer = getDataLoaders(data, y_column, batch_size, train_val_test_split, shufle)
-            model = train(model, device, epochs, train_loader, test_loader, criterion, optimizer_obj, y_transformer)
+            model = train(model, device, epochs, train_loader, test_loader, criterion, optimizer_obj, scheduler, y_transformer)
             output = {
                 "model": model.to('cpu'),
                 "y_transformer": y_transformer,

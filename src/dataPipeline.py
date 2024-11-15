@@ -104,7 +104,7 @@ class DataPipeline:
         self.groupLonLats(num_groups=clusterGroups)
         return self.data
 
-    def cleanData(self):
+    def cleanData(self, params):
         """
         Clean the data by removing Units and replacing word with its values.
         """
@@ -163,6 +163,11 @@ class DataPipeline:
         if 'No. of rooms:' in self.data.columns:
             self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
 
+        if 'features' in self.data.columns:
+            feature_dummies =  self.data['features'].str.get_dummies(sep='\t')
+            self.data = pd.concat([self.data, feature_dummies], axis=1)
+            self.data = self.data.drop(columns=['features'])
+
         # Remove rows with nan in 'price_cleaned' column
         self.data = self.data.dropna(subset=['price_cleaned'])
 
@@ -183,7 +188,10 @@ class DataPipeline:
 
         # drop dublicated rows
         self.data.drop_duplicates(inplace=True)
-        self.data = self.data[self.data['price_cleaned'] != 2]
+
+        # drop rows with price below threshold
+        price_threshold = params['price_threshold']
+        self.data = self.data[self.data['price_cleaned'] > price_threshold]
 
 
 
@@ -206,10 +214,13 @@ class DataPipeline:
 
     def standardize(self):
         """
-        Standardize the DataFrame features.
+        Standardize the DataFrame features. Except for the target column.
         """
         self.scaler = StandardScaler()
-        self.data = pd.DataFrame(self.scaler.fit_transform(self.data), columns=self.data.columns)
+        columns = self.data.columns
+        columns = columns[columns != 'price_cleaned']
+        temp = pd.DataFrame(self.scaler.fit_transform(self.data[columns]), columns=columns)
+        self.data = pd.concat([temp, self.data['price_cleaned']], axis=1)
 
     def toPytorchDataset(self):
         """
@@ -246,7 +257,8 @@ class DataPipeline:
     def runPipeline(self,
                     filePath:str = "data/immo_data_202208_v2.csv",
                     imputer=SimpleImputer(),
-                    normalizeAndStandardize:bool = False
+                    normalizeAndStandardize:bool = False,
+                    columns_to_drop: list = []
                     ):
         """
         Run the data pipeline.
@@ -263,13 +275,15 @@ class DataPipeline:
 
         with open('src/params.yaml', 'r', encoding='utf-8') as file:
             params = yaml.safe_load(file)
-        columns_to_drop = params['columns_to_drop_all']
+
+        if columns_to_drop == []:
+            columns_to_drop = params['columns_to_drop_all']
 
         self.readCsv(filePath)
         self.mergeColumns(params['clusterGroups'])
 
         self.dropColumns(columns_to_drop)
-        self.cleanData()
+        self.cleanData(params)
         self.encodeCategoricalFeatures()
         self.imputeMissingValues(imputer)
         if normalizeAndStandardize:
