@@ -71,9 +71,19 @@ class DataPipeline:
             'Disponibilità'
         ]].bfill(axis=1)['Availability']
 
-        self.data['No. of rooms:'] = self.data[[
-            'No. of rooms:', 'rooms'
-        ]].bfill(axis=1)['No. of rooms:']
+        def clean_and_fill_rooms(data):
+            # Entfernt "m²", "rm" und "r" aus der "rooms"-Spalte
+            data["rooms"] = data["rooms"].str.strip("m²").str.strip("rm").str.strip("r")
+            data["No. of rooms:"] = data["No. of rooms:"].fillna(data["rooms"]).astype("float", errors="ignore")
+            data["No. of rooms:"] = data["No. of rooms:"].replace(0, pd.NA)
+            data["No. of rooms:"] = data["No. of rooms:"].fillna(
+                data["details"].str.extract(r'(\d+)\s*rooms?', expand=False)
+            ).astype("float", errors="ignore")
+            return data
+
+        self.data = clean_and_fill_rooms(self.data)
+
+        self.data["Last refurbishment:"] = self.data["Last refurbishment:"].fillna(self.data["Year built:"])
 
         def extractPlz(address):
             match = re.search(r"\b\d{4}\b", address)
@@ -159,8 +169,9 @@ class DataPipeline:
             )
 
         # No. of rooms: column
-        if 'No. of rooms:' in self.data.columns:
-            self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
+        #if 'No. of rooms:' in self.data.columns:
+            #self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
+            #self.data["No. of rooms:"] = self.data["No. of rooms:"].str.strip("m²").str.strip("r").astype("float")
 
         # Remove rows with nan in 'price_cleaned' column
         self.data = self.data.dropna(subset=['price_cleaned'])
@@ -240,6 +251,7 @@ class DataPipeline:
     def runPipeline(self,
                     filePath:str = "data/immo_data_202208_v2.csv",
                     imputer=SimpleImputer(),
+                    dummy:bool = False,
                     normalizeAndStandardize:bool = False
                     ):
         """
@@ -259,14 +271,16 @@ class DataPipeline:
         self.mergeColumns()
 
         # Read configuration file
-        with open('src/params.yaml', 'r', encoding='utf-8') as file:
+        with open('../src/params.yaml', 'r', encoding='utf-8') as file:
             params = yaml.safe_load(file)
         columns_to_drop = params['columns_to_drop_all']
 
         self.dropColumns(columns_to_drop)
         self.cleanData()
-        self.encodeCategoricalFeatures()
-        self.imputeMissingValues(imputer)
+        if dummy == True:
+            self.encodeCategoricalFeatures()
+        if imputer:
+            self.imputeMissingValues(imputer)
         if normalizeAndStandardize:
             self.normalize()
             self.standardize()
