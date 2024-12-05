@@ -73,9 +73,19 @@ class DataPipeline:
             'Disponibilità'
         ]].bfill(axis=1)['Availability']
 
-        self.data['No. of rooms:'] = self.data[[
-            'No. of rooms:', 'rooms'
-        ]].bfill(axis=1)['No. of rooms:']
+        def clean_and_fill_rooms(data):
+            # Entfernt "m²", "rm" und "r" aus der "rooms"-Spalte
+            data["rooms"] = data["rooms"].str.strip("m²").str.strip("rm").str.strip("r")
+            data["No. of rooms:"] = data["No. of rooms:"].fillna(data["rooms"]).astype("float", errors="ignore")
+            data["No. of rooms:"] = data["No. of rooms:"].replace(0, pd.NA)
+            data["No. of rooms:"] = data["No. of rooms:"].fillna(
+                data["details"].str.extract(r'(\d+)\s*rooms?', expand=False)
+            ).astype("float", errors="ignore")
+            return data
+
+        self.data = clean_and_fill_rooms(self.data)
+
+        self.data["Last refurbishment:"] = self.data["Last refurbishment:"].fillna(self.data["Year built:"])
 
         def extractPlz(address):
             match = re.search(r"\b\d{4}\b", address)
@@ -162,8 +172,9 @@ class DataPipeline:
             )
 
         # No. of rooms: column
-        if 'No. of rooms:' in self.data.columns:
-            self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
+        #if 'No. of rooms:' in self.data.columns:
+            #self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
+            #self.data["No. of rooms:"] = self.data["No. of rooms:"].str.strip("m²").str.strip("r").astype("float")
 
         if 'features' in self.data.columns:
             feature_dummies =  self.data['features'].str.get_dummies(sep='\t')
