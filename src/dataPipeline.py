@@ -73,17 +73,46 @@ class DataPipeline:
             'Disponibilità'
         ]].bfill(axis=1)['Availability']
 
-        def clean_and_fill_rooms(data):
+        def cleanAndFillRooms(data):
             # Entfernt "m²", "rm" und "r" aus der "rooms"-Spalte
             data["rooms"] = data["rooms"].str.strip("m²").str.strip("rm").str.strip("r")
-            data["No. of rooms:"] = data["No. of rooms:"].fillna(data["rooms"]).astype("float", errors="ignore")
+            data["No. of rooms:"] = data["No. of rooms:"].fillna(data["rooms"])
+            data["No. of rooms:"] = data["No. of rooms:"].astype("float", errors="ignore")
             data["No. of rooms:"] = data["No. of rooms:"].replace(0, pd.NA)
             data["No. of rooms:"] = data["No. of rooms:"].fillna(
                 data["details"].str.extract(r'(\d+)\s*rooms?', expand=False)
-            ).astype("float", errors="ignore")
+            )
+            data["No. of rooms:"] = data["No. of rooms:"].astype("float", errors="ignore")
             return data
 
-        self.data = clean_and_fill_rooms(self.data)
+        self.data = cleanAndFillRooms(self.data)
+
+        def cleanAndFillSpace(data):
+            if 'Space extracted' in data.columns:
+                self.data['Space extracted'] = self.data['Space extracted'].apply(
+                    lambda x: x.split(' ')[0] if isinstance(x, str) else x
+                )
+                self.data['Space extracted'] = self.data['Space extracted'].replace({'\'': ''})
+
+            def extractSpace(detail):
+                if isinstance(detail, str) and 'm²' in detail:
+                    try:
+                        return float(detail.split('m²')[0].split()[-1].strip().replace(',', ''))
+                    except ValueError:
+                        return np.nan
+                return np.nan
+
+            # Fill missing values in "Space extracted" using details
+            if "Space extracted" not in data.columns:
+                data["Space extracted"] = np.nan
+
+            data["Space extracted"] = data["Space extracted"].fillna(
+                data["details"].apply(extractSpace)
+            )
+            data["Space extracted"] = data["Space extracted"].astype("float")
+            return data
+
+        self.data = cleanAndFillSpace(self.data)
 
         self.data["Last refurbishment:"] = self.data["Last refurbishment:"].fillna(self.data["Year built:"])
 
