@@ -8,6 +8,7 @@ from torch.utils.data import Dataset
 import numpy as np
 import yaml
 import pgeocode
+import os
 
 
 class DataPipeline:
@@ -73,9 +74,50 @@ class DataPipeline:
             'Disponibilità'
         ]].bfill(axis=1)['Availability']
 
-        self.data['No. of rooms:'] = self.data[[
-            'No. of rooms:', 'rooms'
-        ]].bfill(axis=1)['No. of rooms:']
+        def cleanAndFillRooms(data):
+            # Entfernt "m²", "rm" und "r" aus der "rooms"-Spalte
+            data["rooms"] = data["rooms"].str.strip("m²").str.strip("rm").str.strip("r")
+            data["No. of rooms:"] = data["No. of rooms:"].fillna(data["rooms"])
+            data["No. of rooms:"] = data["No. of rooms:"].astype("float", errors="ignore")
+            data["No. of rooms:"] = data["No. of rooms:"].replace(0, pd.NA)
+            data["No. of rooms:"] = data["No. of rooms:"].fillna(
+                data["details"].str.extract(r'(\d+)\s*rooms?', expand=False)
+            )
+            data["No. of rooms:"] = data["No. of rooms:"].astype("float", errors="ignore")
+            return data
+
+        self.data = cleanAndFillRooms(self.data)
+
+        def cleanAndFillSpace(data):
+            if 'Space extracted' in data.columns:
+                self.data['Space extracted'] = self.data['Space extracted'].apply(
+                    lambda x: x.split(' ')[0] if isinstance(x, str) else x
+                )
+                self.data['Space extracted'] = self.data['Space extracted'].replace({'\'': ''})
+
+            def extractSpace(detail):
+                if isinstance(detail, str) and 'm²' in detail:
+                    try:
+                        return float(detail.split('m²')[0].split()[-1].strip().replace(',', ''))
+                    except ValueError:
+                        return np.nan
+                return np.nan
+
+            # Fill missing values in "Space extracted" using details
+            if "Space extracted" not in data.columns:
+                data["Space extracted"] = np.nan
+
+            data["Space extracted"] = data["Space extracted"].fillna(
+                data["details"].apply(extractSpace)
+            )
+            data["Space extracted"] = data["Space extracted"].astype("float")
+            return data
+
+        self.data = cleanAndFillSpace(self.data)
+
+        self.data["Last refurbishment:"] = self.data["Last refurbishment:"].fillna(
+            self.data["Year built:"]
+        )
 
         def extractPlz(address):
             match = re.search(r"\b\d{4}\b", address)
@@ -102,7 +144,7 @@ class DataPipeline:
             return df
 
         self.data = imputeLonLat(self.data)
-        self.groupLonLats(num_groups=clusterGroups)
+        self.groupLonLats(clusterGroups)
         return self.data
 
     def cleanData(self, params):
@@ -153,6 +195,7 @@ class DataPipeline:
             self.data['Plot_area_unified'] = self.data[
                 'Plot_area_unified'
             ].astype(str).str.replace(',', '')
+            self.data['Plot_area_unified'] = self.data['Plot_area_unified'].astype(float)
 
         # Example of how to process the Availability column
         if 'Availability' in self.data.columns:
@@ -160,9 +203,6 @@ class DataPipeline:
                 lambda x: 'Future' if len(str(x).split('.')) > 1 else x
             )
 
-        # No. of rooms: column
-        if 'No. of rooms:' in self.data.columns:
-            self.data['No. of rooms:'] = self.data['No. of rooms:'].replace({'\'':''})
 
         if 'features' in self.data.columns:
             feature_dummies =  self.data['features'].str.get_dummies(sep='\t')
@@ -259,7 +299,8 @@ class DataPipeline:
                     filePath:str = "data/immo_data_202208_v2.csv",
                     imputer=SimpleImputer(),
                     normalizeAndStandardize:bool = False,
-                    columnsToDrop: list = []
+                    columnsToDrop: list = [],
+                    get_dummies: bool = True,
                     ):
         """
         Run the data pipeline.
@@ -274,7 +315,11 @@ class DataPipeline:
         pandas.DataFrame: The processed DataFrame.
         """
 
-        with open('src/params.yaml', 'r', encoding='utf-8') as file:
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        params_path = os.path.join(current_dir, '..', 'src', 'params.yaml')
+
+        with open(params_path, 'r', encoding='utf-8') as file:
             params = yaml.safe_load(file)
 
         if columnsToDrop == []:
@@ -285,8 +330,10 @@ class DataPipeline:
 
         self.dropColumns(columnsToDrop)
         self.cleanData(params)
-        self.encodeCategoricalFeatures()
-        self.imputeMissingValues(imputer)
+        if get_dummies:
+            self.encodeCategoricalFeatures()
+        if imputer:
+            self.imputeMissingValues(imputer)
         if normalizeAndStandardize:
             #self.normalize()
             self.standardize()
