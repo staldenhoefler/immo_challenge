@@ -8,6 +8,7 @@ from torch.utils.data import Dataset
 import numpy as np
 import yaml
 import pgeocode
+import os
 
 
 class DataPipeline:
@@ -143,7 +144,7 @@ class DataPipeline:
             return df
 
         self.data = imputeLonLat(self.data)
-        self.groupLonLats(num_groups=clusterGroups)
+        self.groupLonLats(clusterGroups)
         return self.data
 
     def cleanData(self, params):
@@ -298,7 +299,8 @@ class DataPipeline:
                     filePath:str = "data/immo_data_202208_v2.csv",
                     imputer=SimpleImputer(),
                     normalizeAndStandardize:bool = False,
-                    columnsToDrop: list = []
+                    columnsToDrop: list = [],
+                    get_dummies: bool = True,
                     ):
         """
         Run the data pipeline.
@@ -313,7 +315,11 @@ class DataPipeline:
         pandas.DataFrame: The processed DataFrame.
         """
 
-        with open('src/params.yaml', 'r', encoding='utf-8') as file:
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        params_path = os.path.join(current_dir, '..', 'src', 'params.yaml')
+
+        with open(params_path, 'r', encoding='utf-8') as file:
             params = yaml.safe_load(file)
 
         if columnsToDrop == []:
@@ -324,8 +330,10 @@ class DataPipeline:
 
         self.dropColumns(columnsToDrop)
         self.cleanData(params)
-        self.encodeCategoricalFeatures()
-        self.imputeMissingValues(imputer)
+        if get_dummies:
+            self.encodeCategoricalFeatures()
+        if imputer:
+            self.imputeMissingValues(imputer)
         if normalizeAndStandardize:
             #self.normalize()
             self.standardize()
