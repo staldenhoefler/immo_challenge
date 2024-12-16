@@ -1,5 +1,7 @@
 import re
 import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, Normalizer
 from sklearn.cluster import KMeans
@@ -47,7 +49,11 @@ class DataPipeline:
         Parameters:
         columns (list): List of column names to drop.
         """
-        self.data.drop(columns=columns, inplace=True)
+        columns_that_exist = []
+        for column in columns:
+            if column in self.data.columns:
+                columns_that_exist.append(column)
+        self.data.drop(columns=columns_that_exist, inplace=True)
 
     def mergeColumns(self, clusterGroups=50):
         """
@@ -209,12 +215,29 @@ class DataPipeline:
             self.data = pd.concat([self.data, feature_dummies], axis=1)
             self.data = self.data.drop(columns=['features'])
 
+        if 'detailed_description' in self.data.columns:
+            # from gensim.models import Word2Vec
+            print()
+            # model = Word2Vec(self.data['detailed_description'].tolist(), vector_size=100, window=5, min_count=1, workers=4)
+
+
+            #result =
+
+            #vectorizer = TfidfVectorizer(max_features=100)
+            #vectorizer.fit(self.data['detailed_description'])
+            #vectorized_desc = vectorizer.transform(self.data['detailed_description'])
+            #vectorized_desc = pd.DataFrame(vectorized_desc.toarray(), columns=vectorizer.get_feature_names_out())
+            #self.data = pd.concat([self.data, result], axis=1)
+            #self.data = self.data.drop(columns=['detailed_description'])
+
+
         # Remove rows with nan in 'price_cleaned' column
-        self.data = self.data.dropna(subset=['price_cleaned'])
+        if 'price_cleaned' in self.data.columns:
+            self.data = self.data.dropna(subset=['price_cleaned'])
 
         # Change datatype of every column except of some to float
         for column in self.data.columns:
-            if column not in ['Availability', 'type', 'provider', 'type_unified']:
+            if column not in ['Availability', 'type', 'provider', 'type_unified', 'detailed_description']:
                 #print(f'{column}: {self.data[column].unique()}')
                 try:
                     self.data[column] = self.data[column].astype(float)
@@ -228,11 +251,13 @@ class DataPipeline:
         #self.data.rename(columns={'Floor': 'Stockwerk'}, inplace=True)
 
         # drop dublicated rows
-        self.data.drop_duplicates(inplace=True)
+        if 'price_cleaned' in self.data.columns:
+            self.data.drop_duplicates(inplace=True)
 
         # drop rows with price below threshold
-        price_threshold = params['price_threshold']
-        self.data = self.data[self.data['price_cleaned'] > price_threshold]
+        if 'price_cleaned' in self.data.columns:
+            price_threshold = params['price_threshold']
+            self.data = self.data[self.data['price_cleaned'] > price_threshold]
 
 
 
@@ -261,7 +286,8 @@ class DataPipeline:
         columns = self.data.columns
         columns = columns[columns != 'price_cleaned']
         temp = pd.DataFrame(self.scaler.fit_transform(self.data[columns]), columns=columns)
-        self.data = pd.concat([temp, self.data['price_cleaned']], axis=1)
+        if 'price_cleaned' in self.data.columns:
+            self.data = pd.concat([temp, self.data['price_cleaned']], axis=1)
 
     def toPytorchDataset(self):
         """
@@ -332,6 +358,7 @@ class DataPipeline:
         self.cleanData(params)
         if get_dummies:
             self.encodeCategoricalFeatures()
+        self.data = self.data.drop(columns=['Availability_Future'])
         if imputer:
             self.imputeMissingValues(imputer)
         if normalizeAndStandardize:
