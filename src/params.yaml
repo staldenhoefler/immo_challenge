@@ -11,22 +11,22 @@ columns_to_drop_all: [
 'Piano','Superficie del terreno','Superficie utile','Municipality_merged',
 'Floor_merged','Living_space_merged','Plot_area_merged','Availability_merged','location_parsed',
 'title','price','address','link',
-#'details_structured',
+'details_structured',
 'index',
 'Locality','Zip',
-#'rooms',
+'rooms',
 'Floor_unified','Living_area_unified','space',
 'price_s','address_s','Surface living:','Land area:',
 'description_detailed','Floor space:','Volume:','plz','Number of toilets:','Gross yield:',
-'Minimum floor space:','space_cleaned'
+'Minimum floor space:','space_cleaned',
 
 # Temporary columns
-, 'Gross return'
-, 'details'
-, 'Room height:'
+'Gross return',
+'details',
+'Room height:',
 #, 'features'
-, 'type'
-, 'provider' ,
+'type',
+'provider' ,
 #'type_unified',
 #'Availability',
 #'Floor',
@@ -34,7 +34,7 @@ columns_to_drop_all: [
 #'Floor_space_merged',
 'lat',
 'lon',
-'ForestDensityL',
+#'ForestDensityL',
 #'ForestDensityM',
 #'ForestDensityS',
 'Latitude',
