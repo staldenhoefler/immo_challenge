@@ -113,7 +113,7 @@ class DataPipeline:
             data["Space extracted"] = data["Space extracted"].astype("float")
             return data
 
-        self.data = cleanAndFillSpace(self.data)
+        #self.data = cleanAndFillSpace(self.data)
 
         self.data["Last refurbishment:"] = self.data["Last refurbishment:"].fillna(
             self.data["Year built:"]
