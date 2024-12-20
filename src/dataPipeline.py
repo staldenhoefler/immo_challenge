@@ -1,5 +1,7 @@
 import re
 import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, Normalizer
 from sklearn.cluster import KMeans
@@ -30,6 +32,7 @@ class DataPipeline:
         """
         self.data = None
         self.scaler = None
+        self.kmeans = None
 
     def readCsv(self, filePath):
         """
@@ -47,7 +50,11 @@ class DataPipeline:
         Parameters:
         columns (list): List of column names to drop.
         """
-        self.data.drop(columns=columns, inplace=True)
+        columns_that_exist = []
+        for column in columns:
+            if column in self.data.columns:
+                columns_that_exist.append(column)
+        self.data.drop(columns=columns_that_exist, inplace=True)
 
     def mergeColumns(self, clusterGroups=50):
         """
@@ -144,7 +151,12 @@ class DataPipeline:
             return df
 
         self.data = imputeLonLat(self.data)
-        self.groupLonLats(clusterGroups)
+        if clusterGroups > 0:
+            if self.kmeans is None:
+                self.groupLonLats_fit_pred(clusterGroups)
+            else:
+                self.groupLonLats_pred()
+
         return self.data
 
     def cleanData(self, params):
@@ -203,36 +215,32 @@ class DataPipeline:
                 lambda x: 'Future' if len(str(x).split('.')) > 1 else x
             )
 
-
         if 'features' in self.data.columns:
             feature_dummies =  self.data['features'].str.get_dummies(sep='\t')
             self.data = pd.concat([self.data, feature_dummies], axis=1)
             self.data = self.data.drop(columns=['features'])
 
         # Remove rows with nan in 'price_cleaned' column
-        self.data = self.data.dropna(subset=['price_cleaned'])
+        if 'price_cleaned' in self.data.columns:
+            self.data = self.data.dropna(subset=['price_cleaned'])
 
         # Change datatype of every column except of some to float
         for column in self.data.columns:
-            if column not in ['Availability', 'type', 'provider', 'type_unified']:
-                #print(f'{column}: {self.data[column].unique()}')
+            if column not in ['Availability', 'type', 'provider', 'type_unified', 'detailed_description']:
                 try:
                     self.data[column] = self.data[column].astype(float)
                 except:
                     print(f'Error in column: {column}')
                     break
 
-        # Remove rows with nan in 'price_cleaned' column
-
-        # rename column
-        #self.data.rename(columns={'Floor': 'Stockwerk'}, inplace=True)
-
         # drop dublicated rows
-        self.data.drop_duplicates(inplace=True)
+        if 'price_cleaned' in self.data.columns:
+            self.data.drop_duplicates(inplace=True)
 
         # drop rows with price below threshold
-        price_threshold = params['price_threshold']
-        self.data = self.data[self.data['price_cleaned'] > price_threshold]
+        if 'price_cleaned' in self.data.columns:
+            price_threshold = params['price_threshold']
+            self.data = self.data[self.data['price_cleaned'] > price_threshold]
 
 
 
@@ -257,11 +265,20 @@ class DataPipeline:
         """
         Standardize the DataFrame features. Except for the target column.
         """
-        self.scaler = StandardScaler()
-        columns = self.data.columns
-        columns = columns[columns != 'price_cleaned']
-        temp = pd.DataFrame(self.scaler.fit_transform(self.data[columns]), columns=columns)
-        self.data = pd.concat([temp, self.data['price_cleaned']], axis=1)
+        if self.scaler is None:
+            self.scaler = StandardScaler()
+            columns = self.data.columns
+            columns = columns[columns != 'price_cleaned']
+            temp = pd.DataFrame(self.scaler.fit_transform(self.data[columns]), columns=columns)
+            if 'price_cleaned' in self.data.columns:
+                self.data = pd.concat([temp, self.data['price_cleaned']], axis=1)
+        else:
+            columns = self.data.columns
+            columns = columns[columns != 'price_cleaned']
+            temp = pd.DataFrame(self.scaler.transform(self.data[columns]), columns=columns)
+            self.data = temp
+            if 'price_cleaned' in self.data.columns:
+                self.data = pd.concat([temp, self.data['price_cleaned']], axis=1)
 
     def toPytorchDataset(self):
         """
@@ -326,12 +343,14 @@ class DataPipeline:
             columnsToDrop = params['columns_to_drop_all']
 
         self.readCsv(filePath)
+
         self.mergeColumns(params['clusterGroups'])
 
         self.dropColumns(columnsToDrop)
         self.cleanData(params)
         if get_dummies:
             self.encodeCategoricalFeatures()
+
         if imputer:
             self.imputeMissingValues(imputer)
         if normalizeAndStandardize:
@@ -344,10 +363,10 @@ class DataPipeline:
         """
         Encode categorical features in the DataFrame.
         """
-        self.data = pd.get_dummies(self.data)
+        self.data = pd.get_dummies(self.data, drop_first=True)
 
 
-    def groupLonLats(self, numGroups):
+    def groupLonLats_fit_pred(self, numGroups):
         """
         Group the longitude and latitude values into clusters.
 
@@ -357,3 +376,46 @@ class DataPipeline:
 
         kmeans = KMeans(n_clusters=numGroups)
         self.data['region_group'] = kmeans.fit_predict(self.data[['lon', 'lat']])
+        self.kmeans = kmeans
+        self.data = pd.get_dummies(self.data, columns=['region_group'])
+        self.data = self.data.drop(columns=['lon', 'lat'])
+
+    def groupLonLats_pred(self):
+        self.data['region_group'] = self.kmeans.predict(self.data[['lon', 'lat']])
+        self.data = pd.get_dummies(self.data, columns=['region_group'])
+        self.data = self.data.drop(columns=['lon', 'lat'])
+
+
+    def prepare_kaggle_dataset(self, filePath, normalizeAndStandardize=False, imputer=None, columnsToDrop=[], get_dummies=True):
+        """
+        Prepare the dataset for Kaggle submission.
+
+        Returns:
+        pandas.DataFrame: The DataFrame for Kaggle submission.
+        """
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        params_path = os.path.join(current_dir, '..', 'src', 'params.yaml')
+
+        with open(params_path, 'r', encoding='utf-8') as file:
+            params = yaml.safe_load(file)
+
+        self.readCsv(filePath)
+
+        if columnsToDrop == []:
+            columnsToDrop = params['columns_to_drop_all']
+
+        self.mergeColumns(params['clusterGroups'])
+
+        self.dropColumns(columnsToDrop)
+        self.cleanData(params)
+        if get_dummies:
+            self.encodeCategoricalFeatures()
+
+        if imputer:
+            self.imputeMissingValues(imputer)
+
+        if normalizeAndStandardize:
+            #self.normalize()
+            self.standardize()
+
+        return self.data

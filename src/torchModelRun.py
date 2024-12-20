@@ -78,9 +78,9 @@ def getDataLoaders(df, yColumn:str, batchSize:int,
     trainDataset, valDataset, testDataset = random_split(dataset,
                                                             [trainSize, valSize, testSize])
 
-    trainLoader = DataLoader(trainDataset, batchSize=batchSize, shuffle=shufle[0])
-    valLoader = DataLoader(valDataset, batchSize=batchSize, shuffle=shufle[1])
-    testLoader = DataLoader(testDataset, batchSize=batchSize, shuffle=shufle[2])
+    trainLoader = DataLoader(trainDataset, batch_size=batchSize, shuffle=shufle[0])
+    valLoader = DataLoader(valDataset, batch_size=batchSize, shuffle=shufle[1])
+    testLoader = DataLoader(testDataset, batch_size=batchSize, shuffle=shufle[2])
 
     return trainLoader, valLoader, testLoader, transform,  yTransform
 
@@ -127,7 +127,7 @@ def train(model, device, epochs, trainLoader, testLoader,
             optimizer.step()
 
             runningLoss += loss.item()
-        train_loss = runningLoss / (i + 1)
+        trainLoss = runningLoss / (i + 1)
         endtimeTrain = time.time() - startTraintime
         (testMape, trainMape,
          trainLoss, testLoss) = evaluate(model,
@@ -136,7 +136,7 @@ def train(model, device, epochs, trainLoader, testLoader,
                                            criterion, yTransformer)
         scheduler.step(testLoss)
         print(
-            f"Epoch {epoch + 1}, Loss: {train_loss}, "
+            f"Epoch {epoch + 1}, Loss: {trainLoss}, "
             f"Train MAPE: {trainMape}, Test MAPE: {testMape}")
     print("Finished Training")
     wandb.finish()
@@ -247,7 +247,7 @@ def run(Model, data, linearLayers):
 
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             optimizer_obj = getattr(torch.optim, optimizer)(model.parameters(), lr=lr)
-            scheduler = ReduceLROnPlateau(optimizer_obj, mode='min', factor=0.000001, patience=4)
+            scheduler = ReduceLROnPlateau(optimizer_obj, mode='min', factor=0.001, patience=5)
             criterion = getattr(nn, loss_function)()
             (trainLoader, valLoader, testLoader,
              transform, yTransformer) = getDataLoaders(data, yColumn, batchSize, trainValTestSplit, shufle)

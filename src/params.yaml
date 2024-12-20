@@ -3,7 +3,8 @@
 columns_to_drop_all: [
 'Unnamed: 0.1', 'Unnamed: 0','Municipality','Living space',
 'Plot area','Floor space','location','description',
-'detailed_description','url','table','detail_responsive#municipality',
+'detailed_description',
+'url','table','detail_responsive#municipality',
 'detail_responsive#surface_living','detail_responsive#floor','detail_responsive#available_from',
 'Gemeinde','Wohnfläche','Stockwerk','Nutzfläche','Verfügbarkeit','Grundstücksfläche',
 'detail_responsive#surface_property','Commune','Surface habitable','Surface du terrain',
@@ -14,27 +15,27 @@ columns_to_drop_all: [
 'details_structured',
 'index',
 'Locality','Zip',
-'rooms',
+#'rooms',
 'Floor_unified','Living_area_unified','space',
 'price_s','address_s','Surface living:','Land area:',
 'description_detailed','Floor space:','Volume:','plz','Number of toilets:','Gross yield:',
-'Minimum floor space:','space_cleaned',
+'Minimum floor space:','space_cleaned'
 
 # Temporary columns
-'Gross return',
-'details',
-'Room height:',
+, 'Gross return'
+, 'details'
+, 'Room height:'
 #, 'features'
-'type',
-'provider' ,
-#'type_unified',
+, 'type'
+, 'provider' ,
+'type_unified',
 #'Availability',
 #'Floor',
 #'detail_responsive#surface_usable',
 #'Floor_space_merged',
 'lat',
 'lon',
-#'ForestDensityL',
+'ForestDensityL',
 #'ForestDensityM',
 #'ForestDensityS',
 'Latitude',
@@ -90,7 +91,8 @@ columns_to_drop_all: [
 #'Year built:',
 #'Space extracted',
 #'Plot_area_unified',
-
+'Type:',
+'Hall height:',
 ]
 clusterGroups: 50
 price_threshold: 15000
@@ -102,6 +104,6 @@ loss_function: 'MSELoss' # 'MSELoss', 'CrossEntropyLoss' usw.
 epochs: 500
 y_column: 'price_cleaned'
 batch_size: [16]
-learning_rates: [0.0001]
+learning_rates: [0.00001]
 train_val_test_split: [0.8, 0.0, 0.2]
 shufle: [True, False, False]
