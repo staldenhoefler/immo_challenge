@@ -247,7 +247,7 @@ def run(Model, data, linearLayers):
 
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             optimizer_obj = getattr(torch.optim, optimizer)(model.parameters(), lr=lr)
-            scheduler = ReduceLROnPlateau(optimizer_obj, mode='min', factor=0.00001, patience=3)
+            scheduler = ReduceLROnPlateau(optimizer_obj, mode='min', factor=0.001, patience=5)
             criterion = getattr(nn, loss_function)()
             (trainLoader, valLoader, testLoader,
              transform, yTransformer) = getDataLoaders(data, yColumn, batchSize, trainValTestSplit, shufle)
