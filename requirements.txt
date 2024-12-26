@@ -9,3 +9,5 @@ flask
 wandb
 torch
 torchvision
+transformers
+tqdm
