@@ -1,7 +1,5 @@
 import re
 import pandas as pd
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, Normalizer
 from sklearn.cluster import KMeans
