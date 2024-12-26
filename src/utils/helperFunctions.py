@@ -1,8 +1,10 @@
 import pandas as pd
+import numpy as np
 from pathlib import Path
 import os
 import pickle
 import dill
+from sklearn.metrics import mean_absolute_percentage_error
 
 def create_kaggle_results(predictions, path_to_kaggledata='./data/test_data-Kaggle-v0.11.csv', csv_name:str='kaggle_results.csv'):
     '''
@@ -51,3 +53,37 @@ def unpickle_dataframe(file_name: str) -> pd.DataFrame:
         df = dill.load(file)
     print(f"DataFrame loaded from {file_name}.")
     return df
+
+def analyse_highest_errors(y_test, y_pred, X_test, dp):
+    '''
+    Function to analyse the data points with the highest errors in the prediction based on the MAPE.
+
+    Parameters:
+    y_test: True price values
+    y_pred: Predicted price values
+    X_test: Test dataset
+    dp: DataPipeline object
+
+    Returns:
+    df_error: DataFrame with the true and predicted values, error and MAPE
+    '''
+
+    pd.set_option('display.float_format', '{:.2f}'.format)
+    # Calculate the MAPE
+    mape = mean_absolute_percentage_error(y_test, y_pred) * 100
+
+    # Create a dataframe with the true and predicted values
+    df_error = X_test.copy()
+
+    df_error = dp.scaler.inverse_transform(df_error)
+    df_error = pd.DataFrame(df_error, columns=X_test.columns)
+
+    df_error['true_price'] = y_test
+    df_error['predicted_price'] = y_pred
+    df_error['error'] = np.abs(df_error['true_price'] - df_error['predicted_price'])
+    df_error['mape'] = df_error['error'] / df_error['true_price'] * 100
+
+    # Sort the dataframe by the highest mape
+    df_error = df_error.sort_values(by='mape', ascending=False)
+
+    return df_error

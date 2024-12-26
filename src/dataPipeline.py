@@ -11,6 +11,8 @@ import numpy as np
 import yaml
 import pgeocode
 import os
+from transformers import BertForSequenceClassification, BertTokenizer
+from tqdm import tqdm
 
 
 class DataPipeline:
@@ -220,6 +222,10 @@ class DataPipeline:
             self.data = pd.concat([self.data, feature_dummies], axis=1)
             self.data = self.data.drop(columns=['features'])
 
+        if 'detailed_description' in self.data.columns:
+            self.add_BERT_features()
+            self.data = self.data.drop(columns=['detailed_description'])
+
         # Remove rows with nan in 'price_cleaned' column
         if 'price_cleaned' in self.data.columns:
             self.data = self.data.dropna(subset=['price_cleaned'])
@@ -240,8 +246,50 @@ class DataPipeline:
         # drop rows with price below threshold
         if 'price_cleaned' in self.data.columns:
             price_threshold = params['price_threshold']
+            price_threshold_upper = params['price_threshold_upper']
             self.data = self.data[self.data['price_cleaned'] > price_threshold]
+            self.data = self.data[self.data['price_cleaned'] < price_threshold_upper]
 
+    def add_BERT_features(self):
+        # Load model and tokenizer
+        model_name = "bert-base-german-cased"
+        model = BertForSequenceClassification.from_pretrained("./regression_model")
+        tokenizer = BertTokenizer.from_pretrained(model_name)
+
+        # Set model to evaluation mode
+        model.eval()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.to(device)
+
+        # Prepare the descriptions
+        descriptions = self.data['detailed_description'].fillna("").tolist()
+
+        # Tokenize and predict in batches
+        batch_size = 16
+        bert_features = []
+
+        # Use tqdm to add a progress bar
+        for i in tqdm(range(0, len(descriptions), batch_size), desc="Processing BERT Features"):
+            batch_texts = descriptions[i:i + batch_size]
+            tokenized = tokenizer(
+                batch_texts,
+                truncation=True,
+                padding="max_length",
+                max_length=64,
+                return_tensors="pt"
+            )
+            tokenized = {key: value.to(device) for key, value in tokenized.items()}
+
+            # Generate predictions
+            with torch.no_grad():
+                predictions = model(**tokenized).logits
+                predictions = predictions.squeeze().cpu().numpy()
+                if predictions.ndim == 0:
+                    bert_features.append(predictions)
+                else:
+                    bert_features.extend(predictions)
+
+        self.data['bert_feature'] = bert_features
 
 
 
@@ -252,7 +300,9 @@ class DataPipeline:
         Parameters:
         imputer (sklearn.impute._base.SimpleImputer): An instance of an imputer.
         """
-        self.data = pd.DataFrame(imputer.fit_transform(self.data), columns=self.data.columns)
+        columns_to_drop = ['price_cleaned', 'type', 'type_unified', 'detailed_description']
+        columns_to_impute = [col for col in self.data.columns if col not in columns_to_drop]
+        self.data[columns_to_impute] = imputer.fit_transform(self.data[columns_to_impute])
 
     def normalize(self):
         """
@@ -267,18 +317,14 @@ class DataPipeline:
         """
         if self.scaler is None:
             self.scaler = StandardScaler()
-            columns = self.data.columns
-            columns = columns[columns != 'price_cleaned']
-            temp = pd.DataFrame(self.scaler.fit_transform(self.data[columns]), columns=columns)
-            if 'price_cleaned' in self.data.columns:
-                self.data = pd.concat([temp, self.data['price_cleaned']], axis=1)
+            columns_to_drop = ['price_cleaned']
+            columns = [col for col in self.data.columns if col not in columns_to_drop]
+            self.data[columns] = self.scaler.fit_transform(self.data[columns])
         else:
-            columns = self.data.columns
-            columns = columns[columns != 'price_cleaned']
-            temp = pd.DataFrame(self.scaler.transform(self.data[columns]), columns=columns)
-            self.data = temp
-            if 'price_cleaned' in self.data.columns:
-                self.data = pd.concat([temp, self.data['price_cleaned']], axis=1)
+            columns_to_drop = ['price_cleaned']
+            columns = [col for col in self.data.columns if col not in columns_to_drop]
+            self.data[columns] = self.scaler.transform(self.data[columns])
+
 
     def toPytorchDataset(self):
         """
