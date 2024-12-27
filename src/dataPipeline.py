@@ -241,12 +241,7 @@ class DataPipeline:
         if 'price_cleaned' in self.data.columns:
             self.data.drop_duplicates(inplace=True)
 
-        # drop rows with price below threshold
-        if 'price_cleaned' in self.data.columns:
-            price_threshold = params['price_threshold']
-            price_threshold_upper = params['price_threshold_upper']
-            self.data = self.data[self.data['price_cleaned'] > price_threshold]
-            self.data = self.data[self.data['price_cleaned'] < price_threshold_upper]
+
 
     def add_BERT_features(self):
         # Load model and tokenizer
@@ -288,6 +283,46 @@ class DataPipeline:
                     bert_features.extend(predictions)
 
         self.data['bert_feature'] = bert_features
+
+    def imputeHouseFeatures(self):
+        """
+        Impute house-specific features with appropriate default values.
+        """
+        house_types = [
+            'detached-house', 'villa', 'semi-detached-house', 'terrace-house',
+            'chalet', 'farmhouse', 'rustico', 'castle', 'detached-secondary-suite'
+        ]
+
+        # Filling Floor for house types with zeros
+        self.data.loc[
+            (self.data['type_unified'].isin(house_types)) & (self.data['Floor'].isna()),
+            'Floor'
+        ] = 0
+
+        # Fill missing values for usable surface area with 0
+        if 'detail_responsive#surface_usable' in self.data.columns:
+            self.data["detail_responsive#surface_usable"] = self.data["detail_responsive#surface_usable"].fillna(0)
+
+        # Fill missing values for number of floors with 1
+        if 'Number of floors:' in self.data.columns:
+            self.data["Number of floors:"] = self.data["Number of floors:"].fillna(1)
+
+        # Fill missing values for plot area unified with 0
+        if 'Plot_area_unified' in self.data.columns:
+            self.data["Plot_area_unified"] = self.data["Plot_area_unified"].fillna(0)
+
+    def cutValues(self,params):
+        if 'price_cleaned' in self.data.columns:
+            price_threshold = params['price_threshold']
+            price_threshold_upper = params['price_threshold_upper']
+            self.data = self.data[self.data['price_cleaned'] > price_threshold]
+            self.data = self.data[self.data['price_cleaned'] < price_threshold_upper]
+
+        if 'Space extracted' in self.data.columns:
+            self.data.loc[self.data['Space extracted'] < 5, 'Space extracted'] = np.nan
+
+        if 'Floor' in self.data.columns:
+            self.data.loc[self.data["Floor"] >= 41, "Floor"] = np.nan
 
 
 
@@ -361,6 +396,7 @@ class DataPipeline:
                     imputer=SimpleImputer(),
                     normalizeAndStandardize:bool = False,
                     columnsToDrop: list = [],
+                    basic_house_imputer = False,
                     get_dummies: bool = True,
                     ):
         """
@@ -392,9 +428,11 @@ class DataPipeline:
 
         self.dropColumns(columnsToDrop)
         self.cleanData(params)
+        self.cutValues(params)
+        if basic_house_imputer:
+            self.imputeHouseFeatures()
         if get_dummies:
             self.encodeCategoricalFeatures()
-
         if imputer:
             self.imputeMissingValues(imputer)
         if normalizeAndStandardize:

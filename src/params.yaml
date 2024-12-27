@@ -94,6 +94,7 @@ columns_to_drop_all: [
 ]
 clusterGroups: 50
 price_threshold: 15000
+price_threshold_upper: 100_000_000_000
 
 
 ## Parameters for pytorch model
