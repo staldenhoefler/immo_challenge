@@ -459,16 +459,16 @@ class DataPipeline:
         kmeans = KMeans(n_clusters=numGroups)
         self.data['region_group'] = kmeans.fit_predict(self.data[['lon', 'lat']])
         self.kmeans = kmeans
-        self.data = pd.get_dummies(self.data, columns=['region_group'])
+        self.data['region_group'] = self.data['region_group'].astype('category')
         self.data = self.data.drop(columns=['lon', 'lat'])
 
     def groupLonLats_pred(self):
         self.data['region_group'] = self.kmeans.predict(self.data[['lon', 'lat']])
-        self.data = pd.get_dummies(self.data, columns=['region_group'])
+        self.data['region_group'] = self.data['region_group'].astype('category')
         self.data = self.data.drop(columns=['lon', 'lat'])
 
 
-    def prepare_kaggle_dataset(self, filePath, normalizeAndStandardize=False, imputer=None, columnsToDrop=[], get_dummies=True):
+    def prepare_kaggle_dataset(self, filePath, normalizeAndStandardize=False, imputer=None, columnsToDrop=[], basic_house_imputer=False ,get_dummies=True):
         """
         Prepare the dataset for Kaggle submission.
 
@@ -490,6 +490,9 @@ class DataPipeline:
 
         self.dropColumns(columnsToDrop)
         self.cleanData(params)
+        self.cutValues(params)
+        if basic_house_imputer:
+            self.imputeHouseFeatures()
         if get_dummies:
             self.encodeCategoricalFeatures()
 
