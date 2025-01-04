@@ -56,7 +56,7 @@ class DataPipeline:
                 columns_that_exist.append(column)
         self.data.drop(columns=columns_that_exist, inplace=True)
 
-    def mergeColumns(self, clusterGroups=50):
+    def mergeColumns(self, clusterGroups=50,web=False):
         """
         Merge specified columns in the DataFrame.
 
@@ -153,9 +153,9 @@ class DataPipeline:
         self.data = imputeLonLat(self.data)
         if clusterGroups > 0:
             if self.kmeans is None:
-                self.groupLonLats_fit_pred(clusterGroups)
+                self.groupLonLats_fit_pred(clusterGroups,webserver=web)
             else:
-                self.groupLonLats_pred()
+                self.groupLonLats_pred(webserver=web)
 
         return self.data
 
@@ -396,6 +396,7 @@ class DataPipeline:
                     imputer=SimpleImputer(),
                     normalizeAndStandardize:bool = False,
                     columnsToDrop: list = [],
+                    web: bool = False,
                     basic_house_imputer = False,
                     get_dummies: bool = True,
                     ):
@@ -424,7 +425,7 @@ class DataPipeline:
 
         self.readCsv(filePath)
 
-        self.mergeColumns(params['clusterGroups'])
+        self.mergeColumns(params['clusterGroups'],web=web)
 
         self.dropColumns(columnsToDrop)
         self.cleanData(params)
@@ -448,7 +449,7 @@ class DataPipeline:
         self.data = pd.get_dummies(self.data, drop_first=True)
 
 
-    def groupLonLats_fit_pred(self, numGroups):
+    def groupLonLats_fit_pred(self, numGroups,webserver=False):
         """
         Group the longitude and latitude values into clusters.
 
@@ -460,12 +461,14 @@ class DataPipeline:
         self.data['region_group'] = kmeans.fit_predict(self.data[['lon', 'lat']])
         self.kmeans = kmeans
         self.data['region_group'] = self.data['region_group'].astype('category')
-        self.data = self.data.drop(columns=['lon', 'lat'])
+        if not webserver:
+            self.data = self.data.drop(columns=['lon', 'lat'])
 
-    def groupLonLats_pred(self):
+    def groupLonLats_pred(self,webserver=False):
         self.data['region_group'] = self.kmeans.predict(self.data[['lon', 'lat']])
         self.data['region_group'] = self.data['region_group'].astype('category')
-        self.data = self.data.drop(columns=['lon', 'lat'])
+        if not webserver:
+            self.data = self.data.drop(columns=['lon', 'lat'])
 
 
     def prepare_kaggle_dataset(self, filePath, normalizeAndStandardize=False, imputer=None, columnsToDrop=[], basic_house_imputer=False ,get_dummies=True):

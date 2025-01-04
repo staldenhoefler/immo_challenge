@@ -32,8 +32,8 @@ columns_to_drop_all: [
 #'Floor',
 #'detail_responsive#surface_usable',
 #'Floor_space_merged',
-'lat',
-'lon',
+#'lat',
+#'lon',
 #'ForestDensityL',
 #'ForestDensityM',
 #'ForestDensityS',
@@ -92,7 +92,7 @@ columns_to_drop_all: [
 #'Plot_area_unified',
 
 ]
-clusterGroups: 50
+clusterGroups: 100
 price_threshold: 15000
 price_threshold_upper: 100_000_000_000
 
