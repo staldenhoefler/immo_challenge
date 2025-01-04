@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immobilien Bewertung</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <style>
+        body {
+            background-image: url("../static/images/immo_comic.jpg");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: #fff;
+        }
+        .container {
+            background-color: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Immobilien Bewertung</h1>
+        <form action="/" method="post" class="mt-4">
+            <div class="mb-3">
+                <label for="Floor" class="form-label">Stockwerk</label>
+                <input type="number" class="form-control" id="Floor" name="Floor" placeholder="Geben Sie das Stockwerk ein" required>
+            </div>
+            <div class="mb-3">
+                <label for="detail_responsive#surface_usable" class="form-label">Nutzfläche (m²)</label>
+                <input type="number" step="0.1" class="form-control" id="detail_responsive#surface_usable" name="detail_responsive#surface_usable" placeholder="Geben Sie die Nutzfläche ein" required>
+            </div>
+            <div class="mb-3">
+                <label for="Number_of_floors" class="form-label">Anzahl der Stockwerke</label>
+                <input type="number" class="form-control" id="Number_of_floors" name="Number of floors:" placeholder="Geben Sie die Anzahl der Stockwerke ein" required>
+            </div>
+            <div class="mb-3">
+                <label for="Plot_area_unified" class="form-label">Grundstücksfläche (m²)</label>
+                <input type="number" step="0.1" class="form-control" id="Plot_area_unified" name="Plot_area_unified" placeholder="Geben Sie die Grundstücksfläche ein" required>
+            </div>
+            <div class="mb-3">
+                <label for="Space_extracted" class="form-label">Wohnfläche (m²)</label>
+                <input type="number" step="0.1" class="form-control" id="Space_extracted" name="Space extracted" placeholder="Geben Sie die Wohnfläche ein" required>
+            </div>
+            <div class="mb-3">
+                <label for="No_of_rooms" class="form-label">Anzahl der Zimmer</label>
+                <input type="number" step="1" class="form-control" id="No_of_rooms" name="No. of rooms:" placeholder="Geben Sie die Anzahl der Zimmer ein" required>
+            </div>
+            <div class="mb-3">
+                <label for="type_unified" class="form-label">Gebäude Typ</label>
+                <select class="form-select" id="type_unified" name="type_unified" required>
+                    <option value="">Bitte wählen...</option>
+                    <option value="penthouse">Penthouse</option>
+                    <option value="terrace-house">Terrace House</option>
+                    <option value="detached-house">Detached House</option>
+                    <option value="flat">Flat</option>
+                    <option value="stepped-house">Stepped House</option>
+                    <option value="farmhouse">Farmhouse</option>
+                    <option value="stepped-apartment">Stepped Apartment</option>
+                    <option value="duplex-maisonette">Duplex Maisonette</option>
+                    <option value="semi-detached-house">Semi-Detached House</option>
+                    <option value="attic-flat">Attic Flat</option>
+                    <option value="loft">Loft</option>
+                    <option value="chalet">Chalet</option>
+                    <option value="villa">Villa</option>
+                    <option value="attic-room">Attic Room</option>
+                    <option value="secondary-suite">Secondary Suite</option>
+                    <option value="detached-secondary-suite">Detached Secondary Suite</option>
+                    <option value="studio">Studio</option>
+                    <option value="castle">Castle</option>
+                    <option value="furnished-residential-property">Furnished Residential Property</option>
+                    <option value="rustico">Rustico</option>
+                    <option value="single-room">Single Room</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="postleitzahl" class="form-label">Postleitzahl</label>
+                <input type="text" class="form-control" id="postleitzahl" name="postleithzahl" placeholder="Geben Sie die Postleitzahl ein" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Berechnen</button>
+        </form>
+        <div class="mt-4">
+            {% if result is not none %}
+                <div class="alert alert-success" role="alert">
+                    Geschätzter Wert: {{ result }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
