@@ -92,7 +92,7 @@ columns_to_drop_all: [
 #'Plot_area_unified',
 
 ]
-clusterGroups: 100
+clusterGroups: 75
 price_threshold: 15000
 price_threshold_upper: 100_000_000_000
 
