@@ -92,9 +92,11 @@ columns_to_drop_all: [
 #'Space extracted',
 #'Plot_area_unified',
 ]
-clusterGroups: 50
-price_threshold: 10000
-price_threshold_upper: 60000000
+
+clusterGroups: 75
+price_threshold: 15000
+price_threshold_upper: 100_000_000_000
+
 
 ## Parameters for pytorch model
 optimizer: 'SGD' # 'Adam' or 'SGD'
