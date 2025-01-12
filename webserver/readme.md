@@ -2,8 +2,6 @@
 
 Im Rahmen der Entwicklung innovativer digitaler Lösungen wurde eine benutzerfreundliche Webanwendung zur Prognose von Immobilienpreisen konzipiert. Ziel dieser Anwendung ist es, sowohl privaten Käufern als auch Investoren einen einfachen Zugang zu präzisen Preisvorhersagen zu ermöglichen. Der Fokus liegt auf einer intuitiven Bedienbarkeit, die keine speziellen Fachkenntnisse voraussetzt.
 
-![Webserver](images/webserver.png)
-
 ## Voraussetzungen
 
 Für den Betrieb der Webanwendung sind folgende technische Voraussetzungen notwendig:
