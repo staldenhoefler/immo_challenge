@@ -54,7 +54,7 @@ def getDataLoaders(df, yColumn:str, batchSize:int,
     featureColumns = [col for col in data.columns if col != yColumn]
     labelColumn = yColumn
 
-    data[labelColumn] = np.log(data[labelColumn] + 1)
+    data[labelColumn] = np.log(data[labelColumn])
     yTransform = None
     transform = StandardizeTransform(data[featureColumns].mean().values,
                                      data[featureColumns].std().values)

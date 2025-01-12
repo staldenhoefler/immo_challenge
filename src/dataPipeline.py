@@ -11,6 +11,7 @@ import pgeocode
 import os
 from transformers import BertForSequenceClassification, BertTokenizer
 from tqdm import tqdm
+from sklearn.preprocessing import MinMaxScaler
 
 
 class DataPipeline:
@@ -230,7 +231,7 @@ class DataPipeline:
 
         # Change datatype of every column except of some to float
         for column in self.data.columns:
-            if column not in ['Availability', 'type', 'provider', 'type_unified', 'detailed_description']:
+            if column not in ['Availability', 'type', 'provider', 'type_unified', 'detailed_description', 'region_group']:
                 try:
                     self.data[column] = self.data[column].astype(float)
                 except:
@@ -326,7 +327,7 @@ class DataPipeline:
 
 
 
-    def imputeMissingValues(self, imputer=SimpleImputer()):
+    def imputeMissingValues(self, imputer=SimpleImputer(), imputer_is_fitted=False):
         """
         Impute missing values in the DataFrame using the specified imputer.
 
@@ -335,7 +336,10 @@ class DataPipeline:
         """
         columns_to_drop = ['price_cleaned', 'type', 'type_unified', 'detailed_description']
         columns_to_impute = [col for col in self.data.columns if col not in columns_to_drop]
-        self.data[columns_to_impute] = imputer.fit_transform(self.data[columns_to_impute])
+        if imputer_is_fitted:
+            self.data[columns_to_impute] = imputer.transform(self.data[columns_to_impute])
+        else:
+            self.data[columns_to_impute] = imputer.fit_transform(self.data[columns_to_impute])
 
     def normalize(self):
         """
@@ -349,7 +353,8 @@ class DataPipeline:
         Standardize the DataFrame features. Except for the target column.
         """
         if self.scaler is None:
-            self.scaler = StandardScaler()
+            #self.scaler = StandardScaler()
+            self.scaler = MinMaxScaler()
             columns_to_drop = ['price_cleaned']
             columns = [col for col in self.data.columns if col not in columns_to_drop]
             self.data[columns] = self.scaler.fit_transform(self.data[columns])
@@ -500,7 +505,7 @@ class DataPipeline:
             self.encodeCategoricalFeatures()
 
         if imputer:
-            self.imputeMissingValues(imputer)
+            self.imputeMissingValues(imputer, imputer_is_fitted=True)
 
         if normalizeAndStandardize:
             #self.normalize()

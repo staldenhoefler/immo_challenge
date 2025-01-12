@@ -3,7 +3,8 @@
 columns_to_drop_all: [
 'Unnamed: 0.1', 'Unnamed: 0','Municipality','Living space',
 'Plot area','Floor space','location','description',
-'detailed_description','url','table','detail_responsive#municipality',
+'detailed_description',
+'url','table','detail_responsive#municipality',
 'detail_responsive#surface_living','detail_responsive#floor','detail_responsive#available_from',
 'Gemeinde','Wohnfläche','Stockwerk','Nutzfläche','Verfügbarkeit','Grundstücksfläche',
 'detail_responsive#surface_property','Commune','Surface habitable','Surface du terrain',
@@ -18,23 +19,23 @@ columns_to_drop_all: [
 'Floor_unified','Living_area_unified','space',
 'price_s','address_s','Surface living:','Land area:',
 'description_detailed','Floor space:','Volume:','plz','Number of toilets:','Gross yield:',
-'Minimum floor space:','space_cleaned',
+'Minimum floor space:','space_cleaned', 'Type:', 'Hall height:'
 
 # Temporary columns
-'Gross return',
-'details',
-'Room height:',
- 'features',
-'type',
-'provider' ,
-#'type_unified',
-#'Availability',
-#'Floor',
-#'detail_responsive#surface_usable',
-#'Floor_space_merged',
-#'lat',
+, 'Gross return'
+, 'details'
+, 'Room height:'
+#, 'features'
+, 'type'
+, 'provider'
+#,'type_unified'
+,'Availability'
+#,'Floor'
+,'detail_responsive#surface_usable'
+,'Floor_space_merged',
+#,'lat',
 #'lon',
-#'ForestDensityL',
+#,'ForestDensityL',
 #'ForestDensityM',
 #'ForestDensityS',
 'Latitude',
@@ -82,7 +83,7 @@ columns_to_drop_all: [
 #'gde_workers_sector2',
 #'gde_workers_sector3',
 #'gde_workers_total',
-'plz_parsed',
+#'plz_parsed',
 #'No. of rooms:',
 'Number of apartments:',
 #'Last refurbishment:',
@@ -90,19 +91,17 @@ columns_to_drop_all: [
 #'Year built:',
 #'Space extracted',
 #'Plot_area_unified',
-
 ]
-clusterGroups: 100
-price_threshold: 15000
-price_threshold_upper: 100_000_000_000
-
+clusterGroups: 50
+price_threshold: 10000
+price_threshold_upper: 60000000
 
 ## Parameters for pytorch model
 optimizer: 'SGD' # 'Adam' or 'SGD'
 loss_function: 'MSELoss' # 'MSELoss', 'CrossEntropyLoss' usw.
-epochs: 500
+epochs: 200
 y_column: 'price_cleaned'
 batch_size: [16]
-learning_rates: [0.0001]
+learning_rates: [0.001]
 train_val_test_split: [0.8, 0.0, 0.2]
 shufle: [True, False, False]
