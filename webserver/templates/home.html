@@ -28,27 +28,27 @@
         <form action="/" method="post" class="mt-4">
             <div class="mb-3">
                 <label for="Floor" class="form-label">Stockwerk</label>
-                <input type="number" class="form-control" id="Floor" name="Floor" placeholder="Geben Sie das Stockwerk ein" required>
+                <input type="number" class="form-control" id="Floor" name="Floor" placeholder="Geben Sie das Stockwerk ein" min="0" max="50" required>
             </div>
             <div class="mb-3">
                 <label for="detail_responsive#surface_usable" class="form-label">Nutzfläche (m²)</label>
-                <input type="number" step="0.1" class="form-control" id="detail_responsive#surface_usable" name="detail_responsive#surface_usable" placeholder="Geben Sie die Nutzfläche ein" required>
+                <input type="number" step="0.1" class="form-control" id="detail_responsive#surface_usable" name="detail_responsive#surface_usable" placeholder="Geben Sie die Nutzfläche ein" min="1" max="10000" required>
             </div>
             <div class="mb-3">
                 <label for="Number_of_floors" class="form-label">Anzahl der Stockwerke</label>
-                <input type="number" class="form-control" id="Number_of_floors" name="Number of floors:" placeholder="Geben Sie die Anzahl der Stockwerke ein" required>
+                <input type="number" class="form-control" id="Number_of_floors" name="Number of floors:" placeholder="Geben Sie die Anzahl der Stockwerke ein" min="1" max="50" required>
             </div>
             <div class="mb-3">
                 <label for="Plot_area_unified" class="form-label">Grundstücksfläche (m²)</label>
-                <input type="number" step="0.1" class="form-control" id="Plot_area_unified" name="Plot_area_unified" placeholder="Geben Sie die Grundstücksfläche ein" required>
+                <input type="number" step="0.1" class="form-control" id="Plot_area_unified" name="Plot_area_unified" placeholder="Geben Sie die Grundstücksfläche ein" min="1" max="50000" required>
             </div>
             <div class="mb-3">
                 <label for="Space_extracted" class="form-label">Wohnfläche (m²)</label>
-                <input type="number" step="0.1" class="form-control" id="Space_extracted" name="Space extracted" placeholder="Geben Sie die Wohnfläche ein" required>
+                <input type="number" step="0.1" class="form-control" id="Space_extracted" name="Space extracted" placeholder="Geben Sie die Wohnfläche ein" min="1" max="10000" required>
             </div>
             <div class="mb-3">
                 <label for="No_of_rooms" class="form-label">Anzahl der Zimmer</label>
-                <input type="number" step="1" class="form-control" id="No_of_rooms" name="No. of rooms:" placeholder="Geben Sie die Anzahl der Zimmer ein" required>
+                <input type="number" step="1" class="form-control" id="No_of_rooms" name="No. of rooms:" placeholder="Geben Sie die Anzahl der Zimmer ein" min="1" max="100" required>
             </div>
             <div class="mb-3">
                 <label for="type_unified" class="form-label">Gebäude Typ</label>
@@ -79,7 +79,7 @@
             </div>
             <div class="mb-3">
                 <label for="postleitzahl" class="form-label">Postleitzahl</label>
-                <input type="text" class="form-control" id="postleitzahl" name="postleithzahl" placeholder="Geben Sie die Postleitzahl ein" required>
+                <input type="text" class="form-control" id="postleitzahl" name="postleithzahl" placeholder="Geben Sie die Postleitzahl ein" min="1000" max="9999" required>
             </div>
             <button type="submit" class="btn btn-primary">Berechnen</button>
         </form>
